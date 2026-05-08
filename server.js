@@ -17,6 +17,13 @@ const methodOverride = require('method-override'); // دعم PUT و DELETE من 
 // --- 2. تحميل متغيرات البيئة من ملف .env ---
 require('dotenv').config();
 
+// --- تحميل النماذج مبكراً لضمان تسجيلها في Mongoose ---
+require('./src/models/Patient');
+require('./src/models/Appointment');
+require('./src/models/Treatment');
+require('./src/models/Invoice');
+
+
 // --- 3. إنشاء تطبيق Express ---
 const app = express();
 
