@@ -1,70 +1,287 @@
+<%# ============================================================
+     views/dashboard/index.ejs — لوحة التحكم الرئيسية
+     ============================================================ %>
+
+<%
+/* تعريف محتوى الصفحة كـ string لتمريره للـ Layout */
+/* سنستخدم أسلوب include المباشر مع EJS */
+%>
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><%= title %> | <%= clinicName %></title>
-  <!-- Bootstrap 5 RTL CDN -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"
-  />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>" />
 </head>
-<body class="bg-light">
 
-  <div class="container py-5 text-center">
+<body>
+<div class="app-wrapper">
 
-    <div class="mb-4">
-      <!-- أيقونة مؤقتة -->
-      <span style="font-size: 4rem;">🦷</span>
-    </div>
+  <%- include('../partials/sidebar') %>
 
-    <h1 class="display-5 fw-bold text-primary mb-2">
-      <%= clinicName %>
-    </h1>
+  <div class="main-content">
 
-    <p class="lead text-muted mb-4">
-      نظام إدارة عيادة الأسنان — يعمل بنجاح! ✅
-    </p>
+    <%- include('../partials/navbar') %>
 
-    <div class="row justify-content-center g-3">
-      <!-- بطاقة اختبار الاتصال بقاعدة البيانات -->
-      <div class="col-md-4">
-        <div class="card border-success shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title text-success">🟢 السيرفر</h5>
-            <p class="card-text text-muted">Express.js يعمل بنجاح</p>
+    <main class="page-content">
+
+      <%# رسائل Flash %>
+      <% if (successMsg) { %>
+        <div class="flash-alert alert alert-success alert-dismissible">
+          ✅ <%= successMsg %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } %>
+      <% if (errorMsg) { %>
+        <div class="flash-alert alert alert-danger alert-dismissible">
+          ❌ <%= errorMsg %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } %>
+
+      <%# رأس الصفحة %>
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">لوحة التحكم</h1>
+          <p class="page-subtitle">مرحباً بك — نظرة عامة على عيادتك اليوم</p>
+        </div>
+        <a href="/appointments/new" class="btn btn-primary">
+          <i class="bi bi-plus-circle me-1"></i> حجز موعد جديد
+        </a>
+      </div>
+
+      <%# ===== بطاقات الإحصائيات ===== %>
+      <div class="row g-3 mb-4">
+
+        <%# إجمالي المرضى %>
+        <div class="col-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#e8f0fe;">👥</div>
+            <div class="stat-card-value"><%= stats.totalPatients %></div>
+            <div class="stat-card-label">إجمالي المرضى</div>
+            <div class="stat-card-trend up">
+              <i class="bi bi-arrow-up-short"></i> +12% هذا الشهر
+            </div>
+          </div>
+        </div>
+
+        <%# مواعيد اليوم %>
+        <div class="col-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#fef3c7;">📅</div>
+            <div class="stat-card-value"><%= stats.todayAppointments %></div>
+            <div class="stat-card-label">مواعيد اليوم</div>
+            <div class="stat-card-trend up">
+              <i class="bi bi-arrow-up-short"></i> +3 عن أمس
+            </div>
+          </div>
+        </div>
+
+        <%# الفواتير المعلقة %>
+        <div class="col-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#fee2e2;">🧾</div>
+            <div class="stat-card-value"><%= stats.pendingInvoices %></div>
+            <div class="stat-card-label">فواتير معلقة</div>
+            <div class="stat-card-trend down">
+              <i class="bi bi-arrow-down-short"></i> تحتاج متابعة
+            </div>
+          </div>
+        </div>
+
+        <%# إيرادات الشهر %>
+        <div class="col-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#dcfce7;">💰</div>
+            <div class="stat-card-value">
+              <%= stats.monthlyRevenue.toLocaleString('ar-IQ') %>
+            </div>
+            <div class="stat-card-label">إيرادات الشهر (د.ع)</div>
+            <div class="stat-card-trend up">
+              <i class="bi bi-arrow-up-short"></i> +18% عن الشهر الماضي
+            </div>
+          </div>
+        </div>
+
+      </div><%# .row stats %>
+
+      <%# ===== الصف الثاني: المواعيد + آخر المرضى ===== %>
+      <div class="row g-3 mb-4">
+
+        <%# مواعيد اليوم %>
+        <div class="col-12 col-xl-7">
+          <div class="app-card h-100">
+            <div class="app-card-header">
+              <h2 class="app-card-title">
+                📅 مواعيد اليوم
+              </h2>
+              <a href="/appointments/today" class="btn btn-sm btn-outline-primary">
+                عرض الكل
+              </a>
+            </div>
+            <div class="app-card-table">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>المريض</th>
+                    <th>الوقت</th>
+                    <th>العلاج</th>
+                    <th>الحالة</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (typeof todayAppointments !== 'undefined' && todayAppointments.length > 0) { %>
+                    <% todayAppointments.forEach(apt => { %>
+                      <tr>
+                        <td>
+                          <div class="d-flex align-items-center gap-2">
+                            <div class="patient-avatar">
+                              <%= apt.patient.firstName.charAt(0) %>
+                            </div>
+                            <div>
+                              <div class="fw-semibold">
+                                <%= apt.patient.firstName %> <%= apt.patient.lastName %>
+                              </div>
+                              <small class="text-muted"><%= apt.patient.phone %></small>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="fw-semibold"><%= apt.startTime %></span>
+                          <small class="text-muted d-block"><%= apt.duration %> دقيقة</small>
+                        </td>
+                        <td><%= apt.treatmentType %></td>
+                        <td>
+                          <span class="status-badge badge-<%= apt.status %>">
+                            <%= apt.status %>
+                          </span>
+                        </td>
+                        <td>
+                          <a href="/appointments/<%= apt._id %>"
+                             class="btn btn-sm btn-outline-secondary btn-icon"
+                             title="عرض التفاصيل">
+                            <i class="bi bi-eye"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="5" class="text-center py-5 text-muted">
+                        <div style="font-size: 2.5rem; margin-bottom: 8px;">📭</div>
+                        لا توجد مواعيد مجدولة لليوم
+                        <div class="mt-2">
+                          <a href="/appointments/new" class="btn btn-sm btn-primary">
+                            حجز موعد الآن
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <%# آخر المرضى المسجلين %>
+        <div class="col-12 col-xl-5">
+          <div class="app-card h-100">
+            <div class="app-card-header">
+              <h2 class="app-card-title">👥 آخر المرضى</h2>
+              <a href="/patients/new" class="btn btn-sm btn-outline-primary">
+                + إضافة
+              </a>
+            </div>
+            <div class="app-card-table">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>المريض</th>
+                    <th>الكود</th>
+                    <th>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (typeof recentPatients !== 'undefined' && recentPatients.length > 0) { %>
+                    <% recentPatients.forEach(p => { %>
+                      <tr>
+                        <td>
+                          <div class="d-flex align-items-center gap-2">
+                            <div class="patient-avatar">
+                              <%= p.firstName.charAt(0) %>
+                            </div>
+                            <div>
+                              <div class="fw-semibold">
+                                <a href="/patients/<%= p._id %>"
+                                   class="text-decoration-none text-dark">
+                                  <%= p.firstName %> <%= p.lastName %>
+                                </a>
+                              </div>
+                              <small class="text-muted"><%= p.phone %></small>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <code class="text-primary small"><%= p.patientCode %></code>
+                        </td>
+                        <td>
+                          <span class="status-badge badge-<%= p.status %>">
+                            <%= p.status === 'active' ? 'نشط' : 'غير نشط' %>
+                          </span>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="3" class="text-center py-5 text-muted">
+                        <div style="font-size: 2.5rem; margin-bottom: 8px;">👤</div>
+                        لم يتم تسجيل أي مريض بعد
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div><%# .row second %>
+
+      <%# ===== الصف الثالث: روابط سريعة ===== %>
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">⚡ الإجراءات السريعة</h2>
+            </div>
+            <div class="app-card-body">
+              <div class="d-flex flex-wrap gap-2">
+                <a href="/patients/new"      class="btn btn-outline-primary">👤 مريض جديد</a>
+                <a href="/appointments/new"  class="btn btn-outline-success">📅 حجز موعد</a>
+                <a href="/invoices/new"      class="btn btn-outline-warning">🧾 فاتورة جديدة</a>
+                <a href="/appointments/today"class="btn btn-outline-info">🕐 مواعيد اليوم</a>
+                <a href="/patients"          class="btn btn-outline-secondary">🔍 بحث عن مريض</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-4">
-        <div class="card border-success shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title text-success">🟢 قاعدة البيانات</h5>
-            <p class="card-text text-muted">MongoDB متصلة بنجاح</p>
-          </div>
-        </div>
-      </div>
+    </main>
 
-      <div class="col-md-4">
-        <div class="card border-success shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title text-success">🟢 القوالب</h5>
-            <p class="card-text text-muted">EJS يعمل بنجاح</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <%- include('../partials/footer') %>
 
-    <div class="mt-4">
-      <span class="badge bg-secondary">
-        البيئة: <%= process.env.NODE_ENV || 'development' %>
-      </span>
-    </div>
+  </div><%# .main-content %>
+</div><%# .app-wrapper %>
 
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
 </body>
 </html>

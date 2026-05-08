@@ -1,0 +1,112 @@
+<%# ============================================================
+     views/partials/sidebar.ejs — الشريط الجانبي
+     ============================================================ %>
+
+<aside class="sidebar" id="appSidebar">
+
+  <%# الشعار %>
+  <a href="/" class="sidebar-brand">
+    <div class="sidebar-brand-icon">🦷</div>
+    <div class="sidebar-brand-text">
+      <span class="sidebar-brand-name"><%= clinicName %></span>
+      <span class="sidebar-brand-sub">نظام إدارة العيادة</span>
+    </div>
+  </a>
+
+  <%# قائمة التنقل %>
+  <nav class="sidebar-nav">
+
+    <%# المجموعة الرئيسية %>
+    <p class="sidebar-section-title">الرئيسية</p>
+
+    <a href="/"
+       class="sidebar-link <%= currentPath === '/' ? 'active' : '' %>">
+      <span class="sidebar-link-icon">📊</span>
+      لوحة التحكم
+    </a>
+
+    <%# إدارة المرضى %>
+    <p class="sidebar-section-title">المرضى</p>
+
+    <a href="/patients"
+       class="sidebar-link <%= currentPath.startsWith('/patients') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">👥</span>
+      المرضى
+    </a>
+
+    <a href="/patients/new"
+       class="sidebar-link <%= currentPath === '/patients/new' ? 'active' : '' %>">
+      <span class="sidebar-link-icon">➕</span>
+      مريض جديد
+    </a>
+
+    <%# المواعيد %>
+    <p class="sidebar-section-title">المواعيد</p>
+
+    <a href="/appointments"
+       class="sidebar-link <%= currentPath.startsWith('/appointments') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">📅</span>
+      جميع المواعيد
+      <%# Badge ديناميكي — سيُفعَّل لاحقاً %>
+      <%# <span class="badge bg-primary sidebar-badge">5</span> %>
+    </a>
+
+    <a href="/appointments/today"
+       class="sidebar-link <%= currentPath === '/appointments/today' ? 'active' : '' %>">
+      <span class="sidebar-link-icon">🕐</span>
+      مواعيد اليوم
+    </a>
+
+    <a href="/appointments/new"
+       class="sidebar-link <%= currentPath === '/appointments/new' ? 'active' : '' %>">
+      <span class="sidebar-link-icon">📌</span>
+      حجز موعد
+    </a>
+
+    <%# المالية %>
+    <p class="sidebar-section-title">المالية</p>
+
+    <a href="/invoices"
+       class="sidebar-link <%= currentPath.startsWith('/invoices') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">🧾</span>
+      الفواتير
+    </a>
+
+    <a href="/invoices/new"
+       class="sidebar-link <%= currentPath === '/invoices/new' ? 'active' : '' %>">
+      <span class="sidebar-link-icon">💰</span>
+      فاتورة جديدة
+    </a>
+
+    <%# الإعدادات %>
+    <p class="sidebar-section-title">الإعدادات</p>
+
+    <a href="/treatments"
+       class="sidebar-link <%= currentPath.startsWith('/treatments') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">🩺</span>
+      كتالوج العلاجات
+    </a>
+
+    <a href="/settings"
+       class="sidebar-link <%= currentPath.startsWith('/settings') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">⚙️</span>
+      الإعدادات
+    </a>
+
+  </nav>
+
+  <%# أسفل الـ Sidebar %>
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-user">
+      <div class="sidebar-footer-avatar">د</div>
+      <div class="sidebar-footer-info">
+        <div class="sidebar-footer-name">د. أحمد الأنصاري</div>
+        <div class="sidebar-footer-role">طبيب أسنان</div>
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<%# طبقة التعتيم للموبايل %>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>

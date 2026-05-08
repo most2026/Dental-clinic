@@ -1,0 +1,68 @@
+<%# ============================================================
+     views/partials/navbar.ejs — الشريط العلوي
+     ============================================================ %>
+
+<header class="top-navbar">
+
+  <%# زر فتح/إغلاق الـ Sidebar (موبايل) %>
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="قائمة التنقل">
+    ☰
+  </button>
+
+  <%# شريط البحث السريع %>
+  <div class="navbar-search">
+    <input
+      type="text"
+      class="form-control"
+      id="globalSearch"
+      placeholder="🔍  بحث سريع... (مريض، موعد، فاتورة)"
+      autocomplete="off"
+    />
+  </div>
+
+  <%# التاريخ الحالي %>
+  <div class="navbar-date" id="navbarDate">
+    📆 <span id="currentDateDisplay">جاري التحميل...</span>
+  </div>
+
+  <%# الأدوات %>
+  <div class="navbar-actions">
+
+    <%# زر إضافة موعد سريع %>
+    <a href="/appointments/new" class="navbar-icon-btn" title="حجز موعد جديد">
+      📌
+    </a>
+
+    <%# الإشعارات %>
+    <button class="navbar-icon-btn" title="الإشعارات">
+      🔔
+      <span class="badge bg-danger badge-pill">3</span>
+    </button>
+
+    <%# القائمة المنسدلة للمستخدم %>
+    <div class="dropdown">
+      <button
+        class="navbar-icon-btn"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+        title="حساب المستخدم"
+        style="width: auto; gap: 6px; padding: 0 10px; font-size: 13px; font-weight: 600;"
+      >
+        <div class="patient-avatar" style="width:30px; height:30px; font-size:12px;">د</div>
+        <span class="d-none d-md-inline">الحساب</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-start shadow border-0 rounded-3">
+        <li>
+          <h6 class="dropdown-header">
+            د. أحمد الأنصاري
+            <small class="d-block text-muted fw-normal">طبيب أسنان</small>
+          </h6>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="/settings">⚙️ الإعدادات</a></li>
+        <li><a class="dropdown-item text-danger" href="/logout">🚪 تسجيل الخروج</a></li>
+      </ul>
+    </div>
+
+  </div>
+</header>
