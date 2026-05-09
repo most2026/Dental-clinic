@@ -26,25 +26,25 @@
     </a>
 
     <%# إدارة المرضى %>
-    <p class="sidebar-section-title">المرضى</p>
+<p class="sidebar-section-title">المرضى</p>
 
-    <a href="/patients"
-       class="sidebar-link <%= currentPath.startsWith('/patients') ? 'active' : '' %>">
-      <span class="sidebar-link-icon">👥</span>
-      المرضى
-    </a>
+<%# تم تغيير .startsWith إلى === لضمان عدم التداخل %>
+<a href="/patients"
+   class="sidebar-link <%= currentPath === '/patients' ? 'active' : '' %>">
+  <span class="sidebar-link-icon">👥</span>
+  المرضى
+</a>
 
-    <a href="/patients/new"
-       class="sidebar-link <%= currentPath === '/patients/new' ? 'active' : '' %>">
-      <span class="sidebar-link-icon">➕</span>
-      مريض جديد
-    </a>
-
+<a href="/patients/new"
+   class="sidebar-link <%= currentPath === '/patients/new' ? 'active' : '' %>">
+  <span class="sidebar-link-icon">➕</span>
+  مريض جديد
+</a>
     <%# المواعيد %>
     <p class="sidebar-section-title">المواعيد</p>
 
     <a href="/appointments"
-       class="sidebar-link <%= currentPath.startsWith('/appointments') ? 'active' : '' %>">
+       class="sidebar-link <%= currentPath === '/appointments' ? 'active' : '' %>">
       <span class="sidebar-link-icon">📅</span>
       جميع المواعيد
       <%# Badge ديناميكي — سيُفعَّل لاحقاً %>

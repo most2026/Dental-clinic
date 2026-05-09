@@ -285,20 +285,25 @@ patientSchema.virtual('age').get(function () {
 
 // ============================================================
 // Pre-Save Hook — توليد رقم المريض تلقائياً
-// مثال: PT-2024-00001
 // ============================================================
-patientSchema.pre('save', async function (next) {
-  // فقط عند إنشاء مريض جديد (ليس عند التحديث)
-  if (!this.isNew) return next();
+patientSchema.pre('save', async function () {
+  // 1. لا نحتاج لـ next هنا عند استخدام async function
+  if (!this.isNew) return;
 
   try {
-    const year  = new Date().getFullYear();
-    const count = await mongoose.model('Patient').countDocuments();
+    const year = new Date().getFullYear();
+    
+    // 2. استخدام this.constructor بدلاً من mongoose.model('Patient') 
+    // لتجنب مشاكل الاستدعاء الدائري أو تأخر تعريف الموديل
+    const count = await this.constructor.countDocuments();
+    
     // رقم مكوّن من 5 خانات مع أصفار بادئة
     this.patientCode = `PT-${year}-${String(count + 1).padStart(5, '0')}`;
-    next();
+    
+    // 3. لا داعي لاستدعاء next()، الدالة ستنتهي بنجاح هنا
   } catch (error) {
-    next(error);
+    // 4. في حالة الخطأ، نقوم برمي الخطأ مباشرة
+    throw error; 
   }
 });
 

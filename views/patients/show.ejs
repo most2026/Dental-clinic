@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('../partials/sidebar') %>
+  <div class="main-content">
+    <%- include('../partials/navbar') %>
+    <main class="page-content">
+
+      <% if (locals.successMsg) { %>
+        <div class="flash-alert alert alert-success alert-dismissible">✅ <%= successMsg %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      <% } %>
+
+      <%# رأس الصفحة %>
+      <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+          <div class="patient-avatar" style="width:52px;height:52px;font-size:20px; display: flex; align-items: center; justify-content: center; background: #e9ecef; border-radius: 50%;">
+            <%= patient.firstName ? patient.firstName.charAt(0) : '?' %>
+          </div>
+          <div>
+            <h1 class="page-title mb-0"><%= patient.fullName %></h1>
+            <div class="d-flex align-items-center gap-2 mt-1">
+              <code class="text-primary"><%= patient.patientCode %></code>
+              <span class="status-badge badge-<%= patient.status %>">
+                <%= patient.status === 'active' ? 'نشط' : 'غير نشط' %>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="/appointments/new?patient=<%= patient._id %>" class="btn btn-success btn-sm">
+            <i class="bi bi-calendar-plus me-1"></i> موعد جديد
+          </a>
+          <a href="/patients/<%= patient._id %>/edit" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil me-1"></i> تعديل
+          </a>
+          <a href="/patients" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-right me-1"></i> العودة
+          </a>
+        </div>
+      </div>
+
+      <div class="row g-3">
+
+        <%# البيانات الشخصية %>
+        <div class="col-12 col-lg-4">
+          <div class="app-card h-100">
+            <div class="app-card-header">
+              <h2 class="app-card-title">👤 البيانات الشخصية</h2>
+            </div>
+            <div class="app-card-body">
+              <% 
+                const infoItems = [
+                  { icon: '📞', label: 'الهاتف',     value: patient.phone },
+                  { icon: '📱', label: 'هاتف احتياطي', value: patient.alternativePhone || '—' },
+                  { icon: '📧', label: 'البريد',     value: patient.email || '—' },
+                  { icon: '📍', label: 'العنوان',    value: patient.address || '—' },
+                  { icon: '🎂', label: 'العمر',      value: patient.age ? patient.age + ' سنة' : '—' },
+                  { icon: '⚧',  label: 'الجنس',     value: patient.gender === 'male' ? 'ذكر' : 'أنثى' },
+                  { icon: '📅', label: 'أول زيارة', value: patient.firstVisitDate ? new Date(patient.firstVisitDate).toLocaleDateString('ar-IQ') : '—' },
+                  { icon: '🗓',  label: 'آخر زيارة', value: patient.lastVisitDate  ? new Date(patient.lastVisitDate).toLocaleDateString('ar-IQ')  : '—' },
+                ] 
+              %>
+              <dl class="row g-0 mb-0">
+                <% infoItems.forEach(item => { %>
+                  <dt class="col-5 text-muted small py-2 border-bottom"><%= item.icon %> <%= item.label %></dt>
+                  <dd class="col-7 fw-semibold small py-2 border-bottom mb-0"><%= item.value %></dd>
+                <% }) %>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <%# السجل الطبي %>
+        <div class="col-12 col-lg-4">
+          <div class="app-card h-100">
+            <div class="app-card-header">
+              <h2 class="app-card-title">🩺 السجل الطبي</h2>
+            </div>
+            <div class="app-card-body">
+              <% const mh = patient.medicalHistory || {}; %>
+
+              <div class="mb-3">
+                <div class="small fw-semibold text-muted mb-1">أمراض مزمنة</div>
+                <% if (mh.chronicDiseases && mh.chronicDiseases.length > 0) { %>
+                  <% mh.chronicDiseases.forEach(d => { %>
+                    <span class="badge bg-danger-subtle text-danger me-1 mb-1"><%= d %></span>
+                  <% }) %>
+                <% } else { %><span class="text-muted small">لا يوجد</span><% } %>
+              </div>
+
+              <div class="mb-3">
+                <div class="small fw-semibold text-muted mb-1">الأدوية الحالية</div>
+                <% if (mh.currentMedications && mh.currentMedications.length > 0) { %>
+                  <% mh.currentMedications.forEach(m => { %>
+                    <span class="badge bg-info-subtle text-info me-1 mb-1"><%= m %></span>
+                  <% }) %>
+                <% } else { %><span class="text-muted small">لا يوجد</span><% } %>
+              </div>
+
+              <div class="mb-3">
+                <div class="small fw-semibold text-muted mb-1">⚠️ الحساسية</div>
+                <% if (mh.allergies && mh.allergies.length > 0) { %>
+                  <% mh.allergies.forEach(a => { %>
+                    <span class="badge bg-warning-subtle text-warning me-1 mb-1"><%= a %></span>
+                  <% }) %>
+                <% } else { %><span class="text-muted small">لا يوجد</span><% } %>
+              </div>
+
+              <div class="mb-3">
+                <span class="badge <%= mh.isSmoker ? 'bg-danger' : 'bg-success' %>">
+                  <%= mh.isSmoker ? '🚬 مدخن' : '✅ غير مدخن' %>
+                </span>
+              </div>
+
+              <% if (mh.additionalNotes) { %>
+                <div>
+                  <div class="small fw-semibold text-muted mb-1">ملاحظات طبية</div>
+                  <p class="small mb-0 text-body"><%= mh.additionalNotes %></p>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <%# ملاحظات الطبيب %>
+        <div class="col-12 col-lg-4">
+          <div class="app-card h-100">
+            <div class="app-card-header">
+              <h2 class="app-card-title">📋 ملاحظات الطبيب</h2>
+            </div>
+            <div class="app-card-body">
+              <% if (patient.generalNotes) { %>
+                <p class="mb-0 small"><%= patient.generalNotes %></p>
+              <% } else { %>
+                <p class="text-muted text-center py-4 small">لا توجد ملاحظات بعد</p>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <%# سجل المواعيد %>
+        <div class="col-12 col-xl-6">
+          <div class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">📅 سجل المواعيد</h2>
+              <a href="/appointments/new?patient=<%= patient._id %>" class="btn btn-sm btn-outline-success">+ موعد</a>
+            </div>
+            <div class="app-card-table" style="overflow-x: auto;">
+              <% if (locals.appointments && appointments.length > 0) { %>
+              <table class="app-table table mb-0">
+                <thead>
+                  <tr><th>التاريخ</th><th>الوقت</th><th>النوع</th><th>الحالة</th></tr>
+                </thead>
+                <tbody>
+                  <% appointments.forEach(apt => { %>
+                  <tr>
+                    <td class="small"><%= new Date(apt.appointmentDate).toLocaleDateString('ar-IQ') %></td>
+                    <td class="small fw-semibold"><%= apt.startTime %></td>
+                    <td class="small"><%= apt.treatmentType %></td>
+                    <td><span class="badge badge-<%= apt.status %>"><%= apt.status %></span></td>
+                  </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+              <% } else { %>
+                <div class="text-center py-4 text-muted small">لا توجد مواعيد مسجلة</div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <%# سجل الفواتير %>
+        <div class="col-12 col-xl-6">
+          <div class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">🧾 سجل الفواتير</h2>
+              <a href="/invoices/new?patient=<%= patient._id %>" class="btn btn-sm btn-outline-warning">+ فاتورة</a>
+            </div>
+            <div class="app-card-table" style="overflow-x: auto;">
+              <% if (locals.invoices && invoices.length > 0) { %>
+              <table class="app-table table mb-0">
+                <thead>
+                  <tr><th>الرقم</th><th>الإجمالي</th><th>المدفوع</th><th>الحالة</th></tr>
+                </thead>
+                <tbody>
+                  <% invoices.forEach(inv => { %>
+                  <tr>
+                    <td><code class="small text-primary"><%= inv.invoiceNumber %></code></td>
+                    <td class="small fw-semibold"><%= inv.totalAmount?.toLocaleString('ar-IQ') %></td>
+                    <td class="small text-success"><%= inv.paidAmount?.toLocaleString('ar-IQ') %></td>
+                    <td><span class="badge badge-<%= inv.status %>"><%= inv.status %></span></td>
+                  </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+              <% } else { %>
+                <div class="text-center py-4 text-muted small">لا توجد فواتير مسجلة</div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,24 +1,18 @@
 // ============================================================
-// src/routes/index.js — المسارات الرئيسية للتطبيق
+// src/routes/index.js — تجميع جميع مسارات التطبيق
 // ============================================================
-
 'use strict';
 
-const express = require('express');
-const router  = express.Router();
+const express    = require('express');
+const router     = express.Router();
+const { getDashboard } = require('../controllers/dashboardController');
 
-// --- الصفحة الرئيسية (Dashboard) ---
-router.get('/', (req, res) => {
-  res.render('dashboard/index', {
-    title: 'لوحة التحكم',
-    // بيانات وهمية مؤقتة — سيتم استبدالها بالبيانات الحقيقية في الخطوة 5
-    stats: {
-      totalPatients:     0,
-      todayAppointments: 0,
-      pendingInvoices:   0,
-      monthlyRevenue:    0,
-    },
-  });
-});
+// --- الصفحة الرئيسية ---
+router.get('/', getDashboard);
+
+// --- تحميل باقي المسارات ---
+router.use('/patients',     require('./patientRoutes'));
+router.use('/appointments', require('./appointmentRoutes'));
+router.use('/invoices',     require('./invoiceRoutes'));
 
 module.exports = router;
