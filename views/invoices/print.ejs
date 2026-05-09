@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <title><%= title %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <style>
+    @media print {
+      .no-print { display:none !important; }
+      body { margin:0; }
+    }
+    body { background:#fff; font-family:'Tajawal',sans-serif; }
+    .invoice-header { border-bottom:3px solid #0d6efd; padding-bottom:20px; margin-bottom:24px; }
+    .invoice-table th { background:#f8f9fc; }
+    .totals-section { background:#f8f9fc; border-radius:10px; padding:16px; }
+    @page { margin:15mm; }
+  </style>
+</head>
+<body class="p-4">
+
+  <div class="no-print mb-3 d-flex gap-2">
+    <button onclick="window.print()" class="btn btn-primary btn-sm">
+      🖨️ طباعة
+    </button>
+    <a href="/invoices/<%= invoice._id %>" class="btn btn-outline-secondary btn-sm">العودة</a>
+  </div>
+
+  <%-- رأس الفاتورة --%>
+  <div class="invoice-header d-flex justify-content-between align-items-start">
+    <div>
+      <h2 class="fw-bold text-primary mb-1">🦷 <%= clinicName %></h2>
+      <p class="text-muted mb-0 small">نظام إدارة عيادة الأسنان المتكامل</p>
+    </div>
+    <div class="text-start">
+      <h3 class="fw-bold mb-1">فاتورة</h3>
+      <div class="text-primary fw-bold fs-5"><%= invoice.invoiceNumber %></div>
+      <div class="text-muted small">
+        التاريخ: <%= new Date(invoice.createdAt).toLocaleDateString('ar-IQ') %>
+      </div>
+      <div class="text-muted small">
+        الاستحقاق: <%= new Date(invoice.dueDate).toLocaleDateString('ar-IQ') %>
+      </div>
+    </div>
+  </div>
+
+  <%-- بيانات المريض --%>
+  <div class="row mb-4">
+    <div class="col-6">
+      <h6 class="text-muted fw-semibold mb-2">فاتورة إلى:</h6>
+      <div class="fw-bold fs-6"><%= invoice.patient.firstName %> <%= invoice.patient.lastName %></div>
+      <div class="text-muted small">كود: <%= invoice.patient.patientCode %></div>
+      <div class="text-muted small">📞 <%= invoice.patient.phone %></div>
+    </div>
+    <div class="col-6 text-start">
+      <div class="d-inline-block p-3 rounded-3" style="background:#e8f0fe;">
+        <div class="fw-semibold text-primary">الحالة: <%= statusLabels[invoice.status] %></div>
+      </div>
+    </div>
+  </div>
+
+  <%-- البنود --%>
+  <table class="table invoice-table mb-4">
+    <thead>
+      <tr>
+        <th>#</th><th>الخدمة</th><th>السعر</th>
+        <th>الكمية</th><th>الخصم</th><th>الإجمالي</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% invoice.items.forEach((item, i) => { %>
+      <tr>
+        <td><%= i+1 %></td>
+        <td><%= item.description %></td>
+        <td><%= item.unitPrice.toLocaleString('ar-IQ') %></td>
+        <td><%= item.quantity %></td>
+        <td><%= item.discount > 0 ? item.discount + '%' : '—' %></td>
+        <td class="fw-bold"><%= item.subtotal.toLocaleString('ar-IQ') %></td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <%-- الإجماليات --%>
+  <div class="row justify-content-end mb-4">
+    <div class="col-md-5">
+      <div class="totals-section">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">المجموع</span>
+          <span><%= invoice.subtotalAmount.toLocaleString('ar-IQ') %> د.ع</span>
+        </div>
+        <% if (invoice.discountAmount > 0) { %>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">الخصم</span>
+          <span class="text-warning">- <%= invoice.discountAmount.toLocaleString('ar-IQ') %> د.ع</span>
+        </div>
+        <% } %>
+        <% if (invoice.taxAmount > 0) { %>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">الضريبة</span>
+          <span><%= invoice.taxAmount.toLocaleString('ar-IQ') %> د.ع</span>
+        </div>
+        <% } %>
+        <div class="d-flex justify-content-between fw-bold fs-5 pt-2 border-top">
+          <span>الإجمالي</span>
+          <span class="text-primary"><%= invoice.totalAmount.toLocaleString('ar-IQ') %> د.ع</span>
+        </div>
+        <div class="d-flex justify-content-between text-success mt-1">
+          <span>✅ المدفوع</span>
+          <span><%= invoice.paidAmount.toLocaleString('ar-IQ') %> د.ع</span>
+        </div>
+        <% if (invoice.remainingAmount > 0) { %>
+        <div class="d-flex justify-content-between text-danger fw-bold mt-1">
+          <span>⏳ المتبقي</span>
+          <span><%= invoice.remainingAmount.toLocaleString('ar-IQ') %> د.ع</span>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <%-- الفوتر --%>
+  <div class="text-center text-muted small border-top pt-3 mt-4">
+    <p>🦷 <%= clinicName %> — شكراً لثقتكم</p>
+  </div>
+
+</body>
+</html>

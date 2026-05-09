@@ -1,17 +1,38 @@
 // ============================================================
-// src/routes/invoiceRoutes.js — (سيكتمل في الخطوة التالية)
+// src/routes/invoiceRoutes.js
 // ============================================================
 'use strict';
 
 const express = require('express');
 const router  = express.Router();
+const ctrl    = require('../controllers/invoiceController');
+const { validateObjectId } = require('../middlewares/errorHandler');
 
-router.get('/', (req, res) => {
-  res.render('invoices/index', { title: 'الفواتير', invoices: [] });
-});
+// GET  /invoices/summary        — ملخص مالي (AJAX)
+router.get('/summary', ctrl.getSummary);
 
-router.get('/new', (req, res) => {
-  res.render('invoices/new', { title: 'فاتورة جديدة', patient: null, errors: [] });
-});
+// GET  /invoices                — قائمة الفواتير
+router.get('/', ctrl.index);
+
+// GET  /invoices/new            — نموذج جديد
+router.get('/new', ctrl.newForm);
+
+// POST /invoices                — حفظ فاتورة
+router.post('/', ctrl.create);
+
+// GET  /invoices/:id/print      — طباعة
+router.get('/:id/print', validateObjectId, ctrl.print);
+
+// GET  /invoices/:id            — تفاصيل
+router.get('/:id', validateObjectId, ctrl.show);
+
+// POST /invoices/:id/payment    — إضافة دفعة
+router.post('/:id/payment', validateObjectId, ctrl.addPayment);
+
+// PATCH /invoices/:id/status    — تحديث الحالة
+router.patch('/:id/status', validateObjectId, ctrl.updateStatus);
+
+// DELETE /invoices/:id          — إلغاء
+router.delete('/:id', validateObjectId, ctrl.destroy);
 
 module.exports = router;
