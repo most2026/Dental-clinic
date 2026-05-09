@@ -1,21 +1,41 @@
 // ============================================================
-// src/routes/appointmentRoutes.js — (سيكتمل في الخطوة التالية)
+// src/routes/appointmentRoutes.js
 // ============================================================
 'use strict';
 
 const express = require('express');
 const router  = express.Router();
+const ctrl    = require('../controllers/appointmentController');
+const { validateObjectId } = require('../middlewares/errorHandler');
 
-router.get('/', (req, res) => {
-  res.render('appointments/index', { title: 'المواعيد', appointments: [] });
-});
+// GET  /appointments/available-slots  — أوقات متاحة (AJAX)
+router.get('/available-slots', ctrl.getAvailableSlots);
 
-router.get('/today', (req, res) => {
-  res.render('appointments/today', { title: 'مواعيد اليوم', appointments: [] });
-});
+// GET  /appointments/today            — تقويم اليوم
+router.get('/today', ctrl.today);
 
-router.get('/new', (req, res) => {
-  res.render('appointments/new', { title: 'حجز موعد جديد', patient: null, errors: [] });
-});
+// GET  /appointments                  — القائمة الكاملة
+router.get('/', ctrl.index);
+
+// GET  /appointments/new              — نموذج الحجز
+router.get('/new', ctrl.newForm);
+
+// POST /appointments                  — حفظ موعد جديد
+router.post('/', ctrl.create);
+
+// GET  /appointments/:id              — تفاصيل الموعد
+router.get('/:id', validateObjectId, ctrl.show);
+
+// GET  /appointments/:id/edit         — نموذج التعديل
+router.get('/:id/edit', validateObjectId, ctrl.editForm);
+
+// PUT  /appointments/:id              — تحديث كامل
+router.put('/:id', validateObjectId, ctrl.update);
+
+// PATCH /appointments/:id/status      — تحديث الحالة فقط (AJAX)
+router.patch('/:id/status', validateObjectId, ctrl.updateStatus);
+
+// DELETE /appointments/:id            — إلغاء موعد
+router.delete('/:id', validateObjectId, ctrl.destroy);
 
 module.exports = router;

@@ -1,8 +1,830 @@
-<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"/><title><%= title %></title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
-<link rel="stylesheet" href="/css/style.css"/></head><body>
-<div class="app-wrapper"><%- include('../partials/sidebar') %><div class="main-content"><%- include('../partials/navbar') %>
-<main class="page-content"><div class="page-header"><h1 class="page-title">📅 المواعيد</h1></div>
-<div class="app-card"><div class="app-card-body text-center py-5 text-muted">🚧 قيد البناء — سيكتمل قريباً</div></div>
-</main><%- include('../partials/footer') %></div></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+  <meta charset="UTF-8"/>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>
+    <%= title %> | <%= clinicName %>
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+  />
+
+  <link rel="stylesheet" href="/css/style.css"/>
+
+  <style>
+
+    :root {
+      --primary: #0d6efd;
+      --primary-light: #f0f7ff;
+    }
+
+    .patient-result-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      transition: all 0.2s;
+    }
+
+    .patient-result-item:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    #patientResults {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      left: 0;
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      z-index: 1050;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .slot-btn {
+      flex: 1 1 calc(25% - 8px);
+      min-width: 80px;
+      padding: 8px 5px;
+      border-radius: 10px;
+      font-size: 13px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .slot-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .slot-btn.selected {
+      background: var(--primary) !important;
+      color: white !important;
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+
+    .slot-btn.busy {
+      background: #fee2e2;
+      color: #dc3545;
+      border-color: #fca5a5;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .sticky-card {
+      position: sticky;
+      top: 20px;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+<div class="app-wrapper">
+
+  <%- include('../partials/sidebar') %>
+
+  <div class="main-content">
+
+    <%- include('../partials/navbar') %>
+
+    <main class="page-content container-fluid py-4">
+
+      <div class="page-header d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+          <h1 class="page-title h3 mb-1">
+            📌 حجز موعد جديد
+          </h1>
+
+          <p class="text-muted mb-0">
+            قم بتعبئة البيانات بدقة لتفادي تضارب المواعيد
+          </p>
+
+        </div>
+
+        <a
+          href="/appointments"
+          class="btn btn-outline-secondary btn-sm"
+        >
+
+          <i class="bi bi-arrow-right"></i>
+
+          العودة للجدول
+
+        </a>
+
+      </div>
+
+      <% if (locals.errors && errors.length > 0) { %>
+
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+
+          <div class="d-flex align-items-center gap-2 mb-2">
+
+            <i class="bi bi-exclamation-triangle-fill"></i>
+
+            <strong>
+              يرجى تصحيح الأخطاء التالية:
+            </strong>
+
+          </div>
+
+          <ul class="mb-0 small">
+
+            <% errors.forEach(e => { %>
+
+              <li>
+                <%= e %>
+              </li>
+
+            <% }) %>
+
+          </ul>
+
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+          ></button>
+
+        </div>
+
+      <% } %>
+
+      <form
+        method="POST"
+        action="/appointments"
+        id="appointmentForm"
+        novalidate
+      >
+
+        <div class="row g-4">
+
+          <%# القسم الأيمن: البيانات %>
+
+          <div class="col-12 col-lg-7">
+
+            <%# اختيار المريض %>
+
+            <div class="card border-0 shadow-sm mb-4">
+
+              <div class="card-header bg-white py-3">
+
+                <h5 class="card-title mb-0">
+
+                  <i class="bi bi-person-badge me-2 text-primary"></i>
+
+                  اختيار المريض
+
+                </h5>
+
+              </div>
+
+              <div class="card-body">
+
+                <input
+                  type="hidden"
+                  name="patientId"
+                  id="patientId"
+                  value="<%= preselectedPatient ? preselectedPatient._id : (appointment.patientId || '') %>"
+                  required
+                />
+
+                <%# حالة المريض المختار %>
+
+                <div
+                  id="selectedPatientContainer"
+                  class="<%= (preselectedPatient || appointment.patientId) ? '' : 'd-none' %>"
+                >
+
+                  <div class="d-flex align-items-center gap-3 p-3 rounded-4 border-2 border-primary border shadow-sm bg-light">
+
+                    <div
+                      class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                      style="width:50px; height:50px; font-size:20px;"
+                      id="selectedAvatar"
+                    >
+
+                      <%= preselectedPatient && preselectedPatient.firstName
+                        ? preselectedPatient.firstName.charAt(0)
+                        : '؟'
+                      %>
+
+                    </div>
+
+                    <div class="flex-grow-1">
+
+                      <div
+                        class="fw-bold h6 mb-1"
+                        id="selectedName"
+                      >
+
+                        <%= preselectedPatient
+                          ? `${preselectedPatient.firstName} ${preselectedPatient.lastName}`
+                          : ''
+                        %>
+
+                      </div>
+
+                      <small
+                        class="text-muted d-block"
+                        id="selectedMeta"
+                      >
+
+                        <%= preselectedPatient
+                          ? `${preselectedPatient.patientCode} • ${preselectedPatient.phone}`
+                          : ''
+                        %>
+
+                      </small>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger border-0"
+                      onclick="clearPatient()"
+                    >
+
+                      <i class="bi bi-x-circle-fill"></i>
+
+                      تغيير
+
+                    </button>
+
+                  </div>
+
+                </div>
+
+                <%# صندوق البحث %>
+
+                <div
+                  id="patientSearchBox"
+                  class="position-relative <%= (preselectedPatient || appointment.patientId) ? 'd-none' : '' %>"
+                >
+
+                  <div class="input-group">
+
+                    <span class="input-group-text bg-white border-end-0">
+
+                      <i class="bi bi-search text-muted"></i>
+
+                    </span>
+
+                    <input
+                      type="text"
+                      id="patientSearch"
+                      class="form-control border-start-0 ps-0"
+                      placeholder="ابحث باسم المريض، رقم الهاتف أو الكود..."
+                      autocomplete="off"
+                    />
+
+                  </div>
+
+                  <div id="patientResults"></div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <%# تفاصيل الخدمة %>
+
+            <div class="card border-0 shadow-sm mb-4">
+
+              <div class="card-header bg-white py-3">
+
+                <h5 class="card-title mb-0">
+
+                  <i class="bi bi-clipboard2-pulse me-2 text-primary"></i>
+
+                  تفاصيل الزيارة
+
+                </h5>
+
+              </div>
+
+              <div class="card-body">
+
+                <div class="row g-3">
+
+                  <div class="col-md-6">
+
+                    <label class="form-label fw-bold small">
+                      نوع العلاج / الجلسة
+                    </label>
+
+                    <select
+                      name="treatmentType"
+                      class="form-select bg-light border-0"
+                      required
+                    >
+
+                      <option value="">
+                        اختر النوع...
+                      </option>
+
+                      <% Object.entries(treatmentTypes).forEach(([val, label]) => { %>
+
+                        <option
+                          value="<%= val %>"
+                          <%= appointment.treatmentType === val ? 'selected' : '' %>
+                        >
+
+                          <%= label %>
+
+                        </option>
+
+                      <% }) %>
+
+                    </select>
+
+                  </div>
+
+                  <div class="col-md-6">
+
+                    <label class="form-label fw-bold small">
+                      المدة المتوقعة
+                    </label>
+
+                    <select
+                      name="duration"
+                      class="form-select bg-light border-0"
+                      id="durationSelect"
+                      required
+                    >
+
+                      <% [15, 30, 45, 60, 90, 120].forEach(d => { %>
+
+                        <option
+                          value="<%= d %>"
+                          <%= (appointment.duration || 30) == d ? 'selected' : '' %>
+                        >
+
+                          <%= d < 60
+                            ? d + ' دقيقة'
+                            : (d / 60).toFixed(1) + ' ساعة'
+                          %>
+
+                        </option>
+
+                      <% }) %>
+
+                    </select>
+
+                  </div>
+
+                  <div class="col-12">
+
+                    <label class="form-label fw-bold small">
+                      سبب الزيارة (اختياري)
+                    </label>
+
+                    <textarea
+                      name="chiefComplaint"
+                      class="form-control bg-light border-0"
+                      rows="3"
+                      placeholder="ملاحظات حول حالة المريض..."
+                    ><%= appointment.chiefComplaint || '' %></textarea>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <%# القسم الأيسر: الوقت %>
+
+          <div class="col-12 col-lg-5">
+
+            <div class="card border-0 shadow-sm sticky-card">
+
+              <div class="card-header bg-primary text-white py-3">
+
+                <h5 class="card-title mb-0">
+
+                  <i class="bi bi-clock-history me-2"></i>
+
+                  التوفر والجدولة
+
+                </h5>
+
+              </div>
+
+              <div class="card-body">
+
+                <div class="mb-4">
+
+                  <label class="form-label fw-bold small">
+                    تاريخ الموعد
+                  </label>
+
+                  <input
+                    type="date"
+                    name="appointmentDate"
+                    id="appointmentDate"
+                    class="form-control form-control-lg"
+                    value="<%= appointment.appointmentDate || defaultDate %>"
+                    min="<%= new Date().toISOString().split('T')[0] %>"
+                    required
+                  />
+
+                </div>
+
+                <input
+                  type="hidden"
+                  name="startTime"
+                  id="startTimeInput"
+                  value="<%= appointment.startTime || '' %>"
+                  required
+                />
+
+                <div class="mb-3">
+
+                  <label class="form-label fw-bold small d-flex justify-content-between">
+
+                    الأوقات المتاحة
+
+                    <span
+                      id="loader"
+                      class="spinner-border spinner-border-sm text-primary d-none"
+                    ></span>
+
+                  </label>
+
+                  <div
+                    id="slotsContainer"
+                    class="d-flex flex-wrap gap-2"
+                  >
+
+                    <div class="w-100 text-center py-4 bg-light rounded-3 text-muted">
+
+                      <i class="bi bi-info-circle mb-2 d-block fs-4"></i>
+
+                      اختر التاريخ لعرض الساعات المتاحة
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+                <div
+                  id="selectedTimeDisplay"
+                  class="alert alert-info border-0 rounded-3 py-2 <%= appointment.startTime ? '' : 'd-none' %>"
+                >
+
+                  <i class="bi bi-check2-circle me-1"></i>
+
+                  الموعد المختار:
+
+                  <strong id="selectedTimeText">
+                    <%= appointment.startTime || '' %>
+                  </strong>
+
+                </div>
+
+              </div>
+
+              <div class="card-footer bg-white border-0 p-3">
+
+                <button
+                  type="submit"
+                  class="btn btn-primary btn-lg w-100 mb-2 shadow"
+                >
+
+                  <i class="bi bi-calendar-check me-1"></i>
+
+                  تأكيد الحجز الآن
+
+                </button>
+
+                <a
+                  href="/appointments"
+                  class="btn btn-link btn-sm w-100 text-decoration-none text-muted"
+                >
+
+                  إلغاء العملية
+
+                </a>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </form>
+
+    </main>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+
+// --- منطق البحث عن مريض ---
+
+const searchInput = document.getElementById('patientSearch');
+const resultsBox = document.getElementById('patientResults');
+
+const patientIdIn = document.getElementById('patientId');
+
+const patientContainer = document.getElementById('selectedPatientContainer');
+
+const searchBoxDiv = document.getElementById('patientSearchBox');
+
+let searchTimer;
+
+searchInput?.addEventListener('input', function () {
+
+  clearTimeout(searchTimer);
+
+  const q = this.value.trim();
+
+  if (q.length < 2) {
+
+    resultsBox.style.display = 'none';
+
+    return;
+
+  }
+
+  searchTimer = setTimeout(async () => {
+
+    try {
+
+      const res = await fetch(
+        `/patients/search?q=${encodeURIComponent(q)}`
+      );
+
+      let data;
+
+      try {
+
+        data = await res.json();
+
+      } catch {
+
+        throw new Error('استجابة غير صالحة');
+
+      }
+
+      if (!data.data?.length) {
+
+        resultsBox.innerHTML = `
+          <div class="patient-result-item text-muted small text-center">
+            لا يوجد مريض بهذا الاسم
+          </div>
+        `;
+
+      } else {
+
+        resultsBox.innerHTML = data.data.map(p => `
+
+          <div
+            class="patient-result-item"
+            onclick="selectPatient(
+              '${p.id}',
+              '${p.name}',
+              '${p.code}',
+              '${p.phone}',
+              '${p.name.charAt(0)}'
+            )"
+          >
+
+            <div class="d-flex align-items-center gap-2">
+
+              <div
+                class="avatar-sm bg-light text-primary rounded-circle d-flex align-items-center justify-content-center"
+                style="width:30px;height:30px;font-size:12px;font-weight:bold"
+              >
+
+                ${p.name.charAt(0)}
+
+              </div>
+
+              <div>
+
+                <div class="fw-bold small text-dark">
+                  ${p.name}
+                </div>
+
+                <div class="text-muted" style="font-size:11px;">
+
+                  ${p.code} • ${p.phone}
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        `).join('');
+
+      }
+
+      resultsBox.style.display = 'block';
+
+    } catch (e) {
+
+      console.error('Search error', e);
+
+    }
+
+  }, 300);
+
+});
+
+function selectPatient(id, name, code, phone, initial) {
+
+  patientIdIn.value = id;
+
+  document.getElementById('selectedName').textContent = name;
+
+  document.getElementById('selectedMeta').textContent =
+    `${code} • ${phone}`;
+
+  document.getElementById('selectedAvatar').textContent = initial;
+
+  patientContainer.classList.remove('d-none');
+
+  searchBoxDiv.classList.add('d-none');
+
+  resultsBox.style.display = 'none';
+
+  searchInput.value = '';
+
+}
+
+function clearPatient() {
+
+  patientIdIn.value = '';
+
+  patientContainer.classList.add('d-none');
+
+  searchBoxDiv.classList.remove('d-none');
+
+  setTimeout(() => searchInput.focus(), 100);
+
+}
+
+// --- منطق جلب الأوقات ---
+
+const dateInput = document.getElementById('appointmentDate');
+
+const durationSelect = document.getElementById('durationSelect');
+
+const slotsContainer = document.getElementById('slotsContainer');
+
+const loader = document.getElementById('loader');
+
+async function loadSlots() {
+
+  const date = dateInput.value;
+
+  const duration = durationSelect.value;
+
+  if (!date) return;
+
+  loader.classList.remove('d-none');
+
+  slotsContainer.style.opacity = '0.5';
+
+  try {
+
+    const res = await fetch(
+      `/appointments/available-slots?date=${date}&duration=${duration}`
+    );
+
+    let data;
+
+    try {
+
+      data = await res.json();
+
+    } catch {
+
+      throw new Error('استجابة غير صالحة');
+
+    }
+
+    if (!data.data?.length) {
+
+      slotsContainer.innerHTML = `
+        <div class="alert alert-warning small w-100">
+          نأسف، لا توجد مواعيد متاحة في هذا التاريخ.
+        </div>
+      `;
+
+    } else {
+
+      slotsContainer.innerHTML = data.data.map(slot => `
+
+        <button
+          type="button"
+          class="slot-btn ${
+            document.getElementById('startTimeInput').value === slot
+              ? 'selected'
+              : ''
+          }"
+          onclick="selectSlot('${slot}', this)"
+        >
+
+          ${slot}
+
+        </button>
+
+      `).join('');
+
+    }
+
+  } catch (err) {
+
+    slotsContainer.innerHTML = `
+      <div class="text-danger small">
+        خطأ في تحميل الأوقات
+      </div>
+    `;
+
+  } finally {
+
+    loader.classList.add('d-none');
+
+    slotsContainer.style.opacity = '1';
+
+  }
+
+}
+
+function selectSlot(time, btn) {
+
+  document.getElementById('startTimeInput').value = time;
+
+  document.querySelectorAll('.slot-btn')
+    .forEach(b => b.classList.remove('selected'));
+
+  btn.classList.add('selected');
+
+  document.getElementById('selectedTimeDisplay')
+    .classList.remove('d-none');
+
+  document.getElementById('selectedTimeText').textContent = time;
+
+}
+
+dateInput.addEventListener('change', loadSlots);
+
+durationSelect.addEventListener('change', loadSlots);
+
+if (dateInput.value) {
+
+  loadSlots();
+
+}
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .patient-card-mini { background: var(--primary-light); border-radius: 12px; padding: 15px; border: 1px solid rgba(13, 110, 253, 0.1); }
+    .tooth-input-hint { font-size: 0.75rem; color: #6c757d; margin-top: 4px; }
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('../partials/sidebar') %>
+  <div class="main-content">
+    <%- include('../partials/navbar') %>
+    <main class="page-content container-fluid py-4">
+
+      <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="page-title h3 mb-1">✏️ تعديل بيانات الموعد</h1>
+          <p class="text-muted mb-0">تحديث تفاصيل الجلسة أو إعادة الجدولة</p>
+        </div>
+        <a href="/appointments/<%= appointment._id %>" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-x-lg me-1"></i> إلغاء التعديل
+        </a>
+      </div>
+
+      <% if (locals.errors && errors.length > 0) { %>
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4">
+          <div class="fw-bold mb-1">⚠️ حدث خطأ أثناء الحفظ:</div>
+          <ul class="mb-0 small ps-3"><% errors.forEach(e=>{%><li><%=e%></li><%})%></ul>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } %>
+
+      <%-- ملاحظة: استخدام _method=PUT يتطلب مكتبة method-override في Node.js --%>
+      <form method="POST" action="/appointments/<%= appointment._id %>?_method=PUT" id="editAppointmentForm">
+        <div class="row g-4">
+          
+          <%-- العمود الرئيسي --%>
+          <div class="col-12 col-lg-8">
+
+            <%-- قسم الوقت والتاريخ --%>
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-calendar-check me-2 text-primary"></i>الجدولة الزمنية</h5>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-5">
+                    <label class="form-label fw-bold small">تاريخ الموعد <span class="text-danger">*</span></label>
+                    <input type="date" name="appointmentDate" class="form-control"
+                      value="<%= new Date(appointment.appointmentDate).toISOString().split('T')[0] %>" required/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold small">وقت البداية <span class="text-danger">*</span></label>
+                    <input type="time" name="startTime" class="form-control"
+                      value="<%= appointment.startTime %>" required/>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-bold small">المدة (دقيقة) <span class="text-danger">*</span></label>
+                    <select name="duration" class="form-select" required>
+                      <% [15,30,45,60,90,120].forEach(d => { %>
+                        <option value="<%= d %>" <%= appointment.duration == d ? 'selected':'' %>><%= d %> دقيقة</option>
+                      <% }) %>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <%-- قسم تفاصيل العلاج --%>
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-medical-mask me-2 text-primary"></i>تفاصيل الجلسة الطبية</h5>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold small">نوع الإجراء <span class="text-danger">*</span></label>
+                    <select name="treatmentType" class="form-select" required>
+                      <% Object.entries(treatmentTypes).forEach(([val,label]) => { %>
+                        <option value="<%= val %>" <%= appointment.treatmentType === val ? 'selected':'' %>><%= label %></option>
+                      <% }) %>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold small">حالة الموعد</label>
+                    <select name="status" id="statusSelect" class="form-select">
+                      <% Object.entries(statusLabels).forEach(([val,label]) => { %>
+                        <option value="<%= val %>" <%= appointment.status === val ? 'selected':'' %>><%= label %></option>
+                      <% }) %>
+                    </select>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label fw-bold small">شكوى المريض (Chief Complaint)</label>
+                    <textarea name="chiefComplaint" class="form-control bg-light" rows="2" placeholder="أدخل شكوى المريض هنا..."><%= appointment.chiefComplaint || '' %></textarea>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label fw-bold small">ملاحظات الطبيب (Session Notes)</label>
+                    <textarea name="sessionNotes" class="form-control bg-light" rows="4"
+                      placeholder="صف ما تم إنجازه خلال هذه الجلسة بالتفصيل..."><%= appointment.sessionNotes || '' %></textarea>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label fw-bold small">الأسنان المعالجة</label>
+                    <input type="text" name="treatedTeeth" class="form-control" dir="ltr"
+                      placeholder="مثال: 18, 24, 46"
+                      value="<%= (appointment.treatedTeeth || []).join(', ') %>"/>
+                    <div class="tooth-input-hint">استخدم نظام FDI (أرقام الأسنان) وافصل بينها بفواصل.</div>
+                  </div>
+
+                  <%-- يظهر فقط عند الإلغاء --%>
+                  <div class="col-12 <%= appointment.status !== 'cancelled' ? 'd-none' : '' %>" id="cancellationSection">
+                    <label class="form-label fw-bold small text-danger">سبب الإلغاء</label>
+                    <input type="text" name="cancellationReason" class="form-control border-danger"
+                      value="<%= appointment.cancellationReason || '' %>" placeholder="لماذا تم إلغاء الموعد؟"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <%-- العمود الجانبي --%>
+          <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px; z-index: 10;">
+              <div class="card-header bg-primary text-white py-3">
+                <h5 class="card-title mb-0 small">بيانات المريض</h5>
+              </div>
+              <div class="card-body">
+                <div class="patient-card-mini d-flex align-items-center gap-3 mb-3">
+                  <div class="patient-avatar shadow-sm" style="width:45px; height:45px; font-size: 1.2rem;">
+                    <%= appointment.patient.firstName.charAt(0) %>
+                  </div>
+                  <div class="overflow-hidden">
+                    <div class="fw-bold text-truncate"><%= appointment.patient.firstName %> <%= appointment.patient.lastName %></div>
+                    <code class="small"><%= appointment.patient.patientCode %></code>
+                  </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 py-2 mb-2 shadow-sm">
+                  <i class="bi bi-save me-1"></i> حفظ التغييرات
+                </button>
+                <a href="/appointments/<%= appointment._id %>" class="btn btn-light border w-100 btn-sm text-muted">تراجع</a>
+              </div>
+            </div>
+
+            <%-- خيار الحذف --%>
+            <div class="mt-4 p-2">
+               <button type="button" class="btn btn-outline-danger btn-sm w-100 border-0" onclick="confirmDelete()">
+                 <i class="bi bi-trash me-1"></i> حذف الموعد نهائياً
+               </button>
+            </div>
+          </div>
+
+        </div>
+      </form>
+
+      <%-- نموذج حذف مخفي --%>
+      <form id="deleteForm" action="/appointments/<%= appointment._id %>?_method=DELETE" method="POST" style="display:none;"></form>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // إظهار/إخفاء حقل سبب الإلغاء بناءً على الحالة
+  const statusSelect = document.getElementById('statusSelect');
+  const cancellationSection = document.getElementById('cancellationSection');
+
+  statusSelect.addEventListener('change', function() {
+    if (this.value === 'cancelled') {
+      cancellationSection.classList.remove('d-none');
+    } else {
+      cancellationSection.classList.add('d-none');
+    }
+  });
+
+  // تأكيد الحذف
+  function confirmDelete() {
+    if (confirm('هل أنت متأكد من حذف هذا الموعد نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) {
+      document.getElementById('deleteForm').submit();
+    }
+  }
+</script>
+</body>
+</html>
