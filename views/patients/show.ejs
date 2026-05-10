@@ -45,6 +45,13 @@
           <a href="/patients" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-right me-1"></i> العودة
           </a>
+          <a href="/patients/<%= patient._id %>/xrays"
+              class="btn btn-outline-dark btn-sm">
+                🩻 الأشعة
+               <% if (patient.xrays?.length > 0) { %>
+               <span class="badge bg-secondary ms-1"><%= patient.xrays.length %></span>
+              <% } %>
+           </a>
         </div>
       </div>
 

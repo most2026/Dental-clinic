@@ -12,6 +12,7 @@ router.get('/', getDashboard);
 
 // --- تحميل باقي المسارات ---
 router.use('/patients',     require('./patientRoutes'));
+router.use('/patients/:patientId/xrays',     require('./xrayRoutes'));
 router.use('/appointments', require('./appointmentRoutes'));
 router.use('/invoices',     require('./invoiceRoutes'));
 

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0" />
+
+  <title>
+    <%= title %> | <%= clinicName %>
+  </title>
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" />
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+  <link rel="stylesheet"
+        href="/css/style.css" />
+
+</head>
+
+<body>
+
+<div class="app-wrapper">
+
+  <%- include('../partials/sidebar') %>
+
+  <div class="main-content">
+
+    <%- include('../partials/navbar') %>
+
+    <main class="page-content">
+
+      <div class="page-header">
+
+        <div>
+
+          <h1 class="page-title">
+            ☁️ رفع صور الأشعة
+          </h1>
+
+          <p class="page-subtitle">
+
+            للمريض:
+
+            <strong>
+              <%= patient.firstName %>
+              <%= patient.lastName %>
+            </strong>
+
+            —
+            <code class="text-primary">
+              <%= patient.patientCode %>
+            </code>
+
+          </p>
+
+        </div>
+
+        <a href="/patients/<%= patient._id %>/xrays"
+           class="btn btn-outline-secondary">
+
+          <i class="bi bi-arrow-right me-1"></i>
+          معرض الأشعة
+
+        </a>
+
+      </div>
+
+      <% if (errors?.length > 0) { %>
+
+        <div class="flash-alert alert alert-danger alert-dismissible fade show">
+
+          ❌ <%= errors[0] %>
+
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="alert"></button>
+
+        </div>
+
+      <% } %>
+
+      <form id="uploadForm"
+            method="POST"
+            enctype="multipart/form-data"
+            action="/patients/<%= patient._id %>/xrays"
+            novalidate>
+
+        <div class="row g-4">
+
+          <%# منطقة السحب والإفلات %>
+
+          <div class="col-12 col-lg-8">
+
+            <div class="app-card mb-4">
+
+              <div class="app-card-header">
+
+                <h2 class="app-card-title">
+                  📂 اختيار الملفات
+                </h2>
+
+                <span class="badge bg-secondary-subtle text-secondary">
+
+                  حتى 10 ملفات • 20MB للملف
+
+                </span>
+
+              </div>
+
+              <div class="app-card-body">
+
+                <%# Drag & Drop Zone %>
+
+                <div class="upload-dropzone"
+                     id="dropzone">
+
+                  <input type="file"
+                         id="fileInput"
+                         name="xrayFiles"
+                         multiple
+                         required
+                         accept="
+                          image/jpeg,
+                          image/png,
+                          image/webp,
+                          image/tiff,
+                          application/pdf
+                         " />
+
+                  <span class="upload-icon">
+                    🩻
+                  </span>
+
+                  <h5 class="fw-bold mb-2">
+                    اسحب وأفلت صور الأشعة هنا
+                  </h5>
+
+                  <p class="text-muted mb-3">
+                    أو انقر لاختيار الملفات
+                  </p>
+
+                  <div class="d-flex flex-wrap justify-content-center gap-2">
+
+                    <span class="badge bg-light text-dark border">JPG</span>
+                    <span class="badge bg-light text-dark border">PNG</span>
+                    <span class="badge bg-light text-dark border">WEBP</span>
+                    <span class="badge bg-light text-dark border">TIFF</span>
+                    <span class="badge bg-light text-dark border">PDF</span>
+
+                  </div>
+
+                </div>
+
+                <%# معاينة الملفات %>
+
+                <div id="previewContainer"
+                     class="mt-4"
+                     style="display:none;">
+
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+
+                    <h6 class="fw-semibold mb-0">
+
+                      الملفات المختارة:
+                      <span id="fileCount">0</span>
+
+                    </h6>
+
+                    <button type="button"
+                            class="btn btn-outline-danger btn-sm"
+                            onclick="clearFiles()">
+
+                      مسح الكل
+
+                    </button>
+
+                  </div>
+
+                  <div class="upload-preview-grid"
+                       id="previewGrid"></div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <%# معلومات الأشعة %>
+
+          <div class="col-12 col-lg-4">
+
+            <div class="app-card"
+                 style="position:sticky;top:80px;">
+
+              <div class="app-card-header">
+
+                <h2 class="app-card-title">
+                  ⚙️ تفاصيل الأشعة
+                </h2>
+
+              </div>
+
+              <div class="app-card-body">
+
+                <div class="mb-3">
+
+                  <label class="form-label fw-semibold">
+
+                    نوع الأشعة
+                    <span class="text-danger">*</span>
+
+                  </label>
+
+                  <select name="xrayType"
+                          class="form-select"
+                          required>
+
+                    <% Object.entries(xrayTypesLabels)
+                      .forEach(([val, label]) => { %>
+
+                      <option value="<%= val %>">
+                        <%= label %>
+                      </option>
+
+                    <% }) %>
+
+                  </select>
+
+                  <div class="form-text">
+                    سيُطبق على جميع الملفات المرفوعة
+                  </div>
+
+                </div>
+
+                <div class="mb-3">
+
+                  <label class="form-label fw-semibold">
+                    الأسنان المرتبطة
+                  </label>
+
+                  <input type="text"
+                         name="relatedTeeth"
+                         dir="ltr"
+                         class="form-control"
+                         placeholder="مثال: 11, 12, 21" />
+
+                  <div class="form-text">
+                    أرقام مفصولة بفواصل (1-32)
+                  </div>
+
+                </div>
+
+                <div class="mb-3">
+
+                  <label class="form-label fw-semibold">
+                    ملاحظات الطبيب
+                  </label>
+
+                  <textarea name="doctorNotes"
+                            rows="4"
+                            class="form-control"
+                            placeholder="وصف ما يظهر في الأشعة، الملاحظات التشخيصية..."></textarea>
+
+                </div>
+
+              </div>
+
+              <div class="app-card-body border-top">
+
+                <button type="submit"
+                        id="submitBtn"
+                        disabled
+                        class="btn btn-primary w-100 py-2">
+
+                  <i class="bi bi-cloud-upload me-1"></i>
+
+                  رفع الأشعة
+
+                  <span id="submitCount"
+                        class="badge bg-white text-primary ms-1"
+                        style="display:none;"></span>
+
+                </button>
+
+                <div id="uploadProgress"
+                     class="progress mt-2"
+                     style="height:4px;display:none;">
+
+                  <div class="progress-bar progress-bar-striped progress-bar-animated w-100"></div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </form>
+
+    </main>
+
+    <%- include('../partials/footer') %>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="/js/main.js"></script>
+
+<script>
+
+const dropzone     = document.getElementById('dropzone');
+const fileInput    = document.getElementById('fileInput');
+const previewCon   = document.getElementById('previewContainer');
+const previewGrid  = document.getElementById('previewGrid');
+const submitBtn    = document.getElementById('submitBtn');
+const submitCount  = document.getElementById('submitCount');
+const fileCountEl  = document.getElementById('fileCount');
+const uploadForm   = document.getElementById('uploadForm');
+
+let selectedFiles = [];
+
+const allowedTypes = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/tiff',
+  'application/pdf'
+];
+
+['dragenter', 'dragover'].forEach(eventName => {
+
+  dropzone.addEventListener(eventName, e => {
+
+    e.preventDefault();
+
+    e.stopPropagation();
+
+    dropzone.classList.add('dragover');
+
+  });
+
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+
+  dropzone.addEventListener(eventName, e => {
+
+    e.preventDefault();
+
+    e.stopPropagation();
+
+    dropzone.classList.remove('dragover');
+
+    if (eventName === 'drop') {
+
+      handleFiles([...e.dataTransfer.files]);
+
+    }
+
+  });
+
+});
+
+fileInput.addEventListener('change', () => {
+
+  handleFiles([...fileInput.files]);
+
+});
+
+function handleFiles(files) {
+
+  if (!files.length) return;
+
+  const validFiles = [];
+
+  files.forEach(file => {
+
+    if (!allowedTypes.includes(file.type)) {
+
+      alert(`❌ الملف "${file.name}" غير مدعوم`);
+
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+
+      alert(`❌ الملف "${file.name}" أكبر من 20MB`);
+
+      return;
+    }
+
+    const alreadyExists = selectedFiles.some(
+      f =>
+        f.name === file.name &&
+        f.size === file.size
+    );
+
+    if (alreadyExists) return;
+
+    validFiles.push(file);
+
+  });
+
+  if (selectedFiles.length + validFiles.length > 10) {
+
+    alert('❌ لا يمكن رفع أكثر من 10 ملفات');
+
+    return;
+  }
+
+  selectedFiles = [
+    ...selectedFiles,
+    ...validFiles
+  ];
+
+  renderPreviews();
+}
+
+function renderPreviews() {
+
+  previewGrid.innerHTML = '';
+
+  selectedFiles.forEach((file, index) => {
+
+    const div = document.createElement('div');
+
+    div.className = 'upload-preview-item';
+
+    if (file.type === 'application/pdf') {
+
+      div.innerHTML = `
+        <div style="
+          width:100%;
+          height:100%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          color:rgba(255,255,255,.6);
+          font-size:2rem;
+        ">
+          📄
+        </div>
+
+        <button type="button"
+                class="upload-preview-remove"
+                onclick="removeFile(${index})">
+
+          ×
+
+        </button>
+
+        <div style="
+          position:absolute;
+          bottom:0;
+          left:0;
+          right:0;
+          background:rgba(0,0,0,.5);
+          color:white;
+          font-size:9px;
+          padding:3px 5px;
+          text-overflow:ellipsis;
+          overflow:hidden;
+          white-space:nowrap;
+        ">
+          ${file.name}
+        </div>
+      `;
+
+    } else {
+
+      const imageUrl = URL.createObjectURL(file);
+
+      div.innerHTML = `
+        <img src="${imageUrl}"
+             alt="${file.name}"
+             style="
+              width:100%;
+              height:100%;
+              object-fit:cover;
+             " />
+
+        <button type="button"
+                class="upload-preview-remove"
+                onclick="removeFile(${index})">
+
+          ×
+
+        </button>
+      `;
+
+      div.querySelector('img')
+        .onload = () => URL.revokeObjectURL(imageUrl);
+    }
+
+    previewGrid.appendChild(div);
+
+  });
+
+  const hasFiles =
+    selectedFiles.length > 0;
+
+  previewCon.style.display =
+    hasFiles ? 'block' : 'none';
+
+  submitBtn.disabled =
+    !hasFiles;
+
+  fileCountEl.textContent =
+    selectedFiles.length;
+
+  submitCount.textContent =
+    selectedFiles.length;
+
+  submitCount.style.display =
+    hasFiles ? 'inline-block' : 'none';
+
+  rebuildFileInput();
+}
+
+function rebuildFileInput() {
+
+  const dt = new DataTransfer();
+
+  selectedFiles.forEach(file => {
+
+    dt.items.add(file);
+
+  });
+
+  fileInput.files = dt.files;
+}
+
+function removeFile(index) {
+
+  selectedFiles.splice(index, 1);
+
+  renderPreviews();
+}
+
+function clearFiles() {
+
+  selectedFiles = [];
+
+  fileInput.value = '';
+
+  renderPreviews();
+}
+
+uploadForm.addEventListener('submit', e => {
+
+  if (!selectedFiles.length) {
+
+    e.preventDefault();
+
+    alert('❌ يرجى اختيار ملف واحد على الأقل');
+
+    return;
+  }
+
+  submitBtn.disabled = true;
+
+  submitBtn.innerHTML = `
+    <span class="spinner-border spinner-border-sm me-2"></span>
+    جاري الرفع...
+  `;
+
+  document
+    .getElementById('uploadProgress')
+    .style.display = 'block';
+});
+
+</script>
+
+</body>
+</html>

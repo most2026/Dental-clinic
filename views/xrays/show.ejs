@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0" />
+
+  <title>
+    <%= title %> | <%= clinicName %>
+  </title>
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" />
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+  <link rel="stylesheet"
+        href="/css/style.css" />
+</head>
+
+<body>
+
+<div class="app-wrapper">
+
+  <%- include('../partials/sidebar') %>
+
+  <div class="main-content">
+
+    <%- include('../partials/navbar') %>
+
+    <main class="page-content">
+
+      <div class="page-header">
+
+        <div>
+
+          <h1 class="page-title">
+            🩻 عرض الأشعة
+          </h1>
+
+          <p class="page-subtitle">
+
+            <%= patient.firstName %>
+            <%= patient.lastName %>
+
+            —
+            <code class="text-primary">
+              <%= patient.patientCode %>
+            </code>
+
+          </p>
+
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+
+          <% if (prevXray) { %>
+
+            <a href="/patients/<%= patient._id %>/xrays/<%= prevXray._id %>"
+               class="btn btn-outline-secondary btn-sm">
+
+              <i class="bi bi-chevron-right"></i>
+              السابقة
+
+            </a>
+
+          <% } %>
+
+          <% if (nextXray) { %>
+
+            <a href="/patients/<%= patient._id %>/xrays/<%= nextXray._id %>"
+               class="btn btn-outline-secondary btn-sm">
+
+              التالية
+              <i class="bi bi-chevron-left"></i>
+
+            </a>
+
+          <% } %>
+
+          <a href="/patients/<%= patient._id %>/xrays"
+             class="btn btn-outline-secondary btn-sm">
+
+            <i class="bi bi-grid me-1"></i>
+            المعرض
+
+          </a>
+
+        </div>
+
+      </div>
+
+      <div class="row g-3">
+
+        <%# عارض الصورة %>
+
+        <div class="col-12 col-lg-8">
+
+          <div class="app-card"
+               style="background:#0f1117;">
+
+            <%# أدوات الصورة %>
+
+            <div class="p-3 border-bottom"
+                 style="border-color:rgba(255,255,255,.1)!important;">
+
+              <div class="xray-tools">
+
+                <button class="tool-btn"
+                        onclick="adjustBrightness(-15)">
+                  🔅 تعتيم
+                </button>
+
+                <button class="tool-btn"
+                        onclick="adjustBrightness(15)">
+                  🔆 إضاءة
+                </button>
+
+                <button class="tool-btn"
+                        onclick="adjustContrast(-10)">
+                  ◑ تباين−
+                </button>
+
+                <button class="tool-btn"
+                        onclick="adjustContrast(10)">
+                  ◑ تباين+
+                </button>
+
+                <button class="tool-btn"
+                        onclick="invertColors()"
+                        id="invertBtn">
+
+                  ⬛ عكس الألوان
+
+                </button>
+
+                <button class="tool-btn"
+                        onclick="rotateImage()">
+
+                  🔄 تدوير 90°
+
+                </button>
+
+                <button class="tool-btn"
+                        onclick="zoomIn()">
+
+                  🔍 تكبير
+
+                </button>
+
+                <button class="tool-btn"
+                        onclick="zoomOut()">
+
+                  🔎 تصغير
+
+                </button>
+
+                <button class="tool-btn"
+                        onclick="resetFilters()">
+
+                  ↺ إعادة تعيين
+
+                </button>
+
+                <a href="<%= xray.filepath %>"
+                   download
+                   class="tool-btn"
+                   style="text-decoration:none;">
+
+                  ⬇️ تحميل
+
+                </a>
+
+              </div>
+
+            </div>
+
+            <%# منطقة الصورة %>
+
+            <div id="imageContainer"
+                 style="
+                  min-height:450px;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  overflow:hidden;
+                  padding:10px;
+                 ">
+
+              <% const isImage =
+                xray.filepath &&
+                !xray.filepath.endsWith('.pdf');
+              %>
+
+              <% if (isImage) { %>
+
+                <img id="xrayImage"
+                     src="<%= xray.filepath %>"
+                     alt="أشعة"
+                     draggable="false"
+                     style="
+                      max-width:100%;
+                      max-height:60vh;
+                      object-fit:contain;
+                      border-radius:6px;
+                      cursor:grab;
+                      transition:filter .2s, transform .2s;
+                     " />
+
+              <% } else { %>
+
+                <div class="text-center p-5">
+
+                  <div style="font-size:5rem; margin-bottom:16px;">
+                    📄
+                  </div>
+
+                  <p class="text-white mb-3">
+                    ملف PDF — انقر للعرض
+                  </p>
+
+                  <a href="<%= xray.filepath %>"
+                     target="_blank"
+                     class="btn btn-outline-light">
+
+                    <i class="bi bi-box-arrow-up-right me-1"></i>
+                    فتح الملف
+
+                  </a>
+
+                </div>
+
+              <% } %>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <%# لوحة المعلومات %>
+
+        <div class="col-12 col-lg-4">
+
+          <%# معلومات الأشعة %>
+
+          <div class="app-card mb-3">
+
+            <div class="app-card-header">
+
+              <h2 class="app-card-title">
+                📋 معلومات الأشعة
+              </h2>
+
+            </div>
+
+            <div class="app-card-body">
+
+              <dl class="row g-0 mb-0">
+
+                <dt class="col-5 text-muted small py-2 border-bottom">
+                  نوع الأشعة
+                </dt>
+
+                <dd class="col-7 fw-semibold small py-2 border-bottom mb-0">
+
+                  <span class="xray-type-badge">
+                    <%= xrayTypesLabels[xray.xrayType] %>
+                  </span>
+
+                </dd>
+
+                <dt class="col-5 text-muted small py-2 border-bottom">
+                  تاريخ الرفع
+                </dt>
+
+                <dd class="col-7 fw-semibold small py-2 border-bottom mb-0">
+
+                  <%= new Date(xray.uploadedAt)
+                        .toLocaleDateString('ar-IQ',{
+                          year:'numeric',
+                          month:'long',
+                          day:'numeric'
+                        }) %>
+
+                </dd>
+
+                <dt class="col-5 text-muted small py-2 border-bottom">
+                  اسم الملف
+                </dt>
+
+                <dd class="col-7 small py-2 border-bottom mb-0 text-truncate"
+                    dir="ltr">
+
+                  <%= xray.filename %>
+
+                </dd>
+
+                <dt class="col-5 text-muted small py-2">
+                  الأسنان
+                </dt>
+
+                <dd class="col-7 small py-2 mb-0">
+
+                  <% if (xray.relatedTeeth?.length > 0) { %>
+
+                    <% xray.relatedTeeth.forEach(t => { %>
+
+                      <span class="badge bg-primary-subtle text-primary">
+                        🦷 <%= t %>
+                      </span>
+
+                    <% }) %>
+
+                  <% } else { %>
+
+                    <span class="text-muted">—</span>
+
+                  <% } %>
+
+                </dd>
+
+              </dl>
+
+            </div>
+
+          </div>
+
+          <%# ملاحظات الطبيب %>
+
+          <div class="app-card mb-3">
+
+            <div class="app-card-header">
+
+              <h2 class="app-card-title">
+                📝 ملاحظات الطبيب
+              </h2>
+
+              <button class="btn btn-sm btn-outline-primary"
+                      onclick="toggleEditNotes()">
+
+                ✏️ تعديل
+
+              </button>
+
+            </div>
+
+            <div class="app-card-body">
+
+              <%# وضع العرض %>
+
+              <div id="notesView">
+
+                <% if (xray.doctorNotes) { %>
+
+                  <p class="mb-0 small"
+                     style="line-height:1.8;">
+
+                    <%= xray.doctorNotes %>
+
+                  </p>
+
+                <% } else { %>
+
+                  <p class="text-muted text-center py-3 small mb-0">
+                    لا توجد ملاحظات بعد
+                  </p>
+
+                <% } %>
+
+              </div>
+
+              <%# وضع التعديل %>
+
+              <div id="notesEdit"
+                   style="display:none;">
+
+                <div class="mb-2">
+
+                  <label class="form-label small fw-semibold">
+                    نوع الأشعة
+                  </label>
+
+                  <select id="editXrayType"
+                          class="form-select form-select-sm">
+
+                    <% Object.entries(xrayTypesLabels)
+                      .forEach(([val,label]) => { %>
+
+                      <option value="<%= val %>"
+                        <%= xray.xrayType === val ? 'selected' : '' %>>
+
+                        <%= label %>
+
+                      </option>
+
+                    <% }) %>
+
+                  </select>
+
+                </div>
+
+                <div class="mb-2">
+
+                  <label class="form-label small fw-semibold">
+                    الأسنان المرتبطة
+                  </label>
+
+                  <input type="text"
+                         id="editTeeth"
+                         dir="ltr"
+                         class="form-control form-control-sm"
+                         placeholder="11, 21, 31"
+                         value="<%= (xray.relatedTeeth || []).join(', ') %>" />
+
+                </div>
+
+                <div class="mb-2">
+
+                  <label class="form-label small fw-semibold">
+                    الملاحظات
+                  </label>
+
+                  <textarea id="editNotes"
+                            rows="5"
+                            class="form-control form-control-sm"><%= xray.doctorNotes || '' %></textarea>
+
+                </div>
+
+                <div class="d-flex gap-2">
+
+                  <button class="btn btn-primary btn-sm flex-grow-1"
+                          onclick="saveNotes()">
+
+                    حفظ
+
+                  </button>
+
+                  <button class="btn btn-outline-secondary btn-sm"
+                          onclick="toggleEditNotes()">
+
+                    إلغاء
+
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <%# الإجراءات %>
+
+          <div class="app-card">
+
+            <div class="app-card-body d-flex flex-column gap-2">
+
+              <a href="<%= xray.filepath %>"
+                 download
+                 class="btn btn-outline-primary btn-sm">
+
+                <i class="bi bi-download me-1"></i>
+                تحميل الصورة
+
+              </a>
+
+              <a href="/patients/<%= patient._id %>/xrays/compare?xray1=<%= xray._id %>"
+                 class="btn btn-outline-info btn-sm">
+
+                <i class="bi bi-layout-split me-1"></i>
+                مقارنة مع أشعة أخرى
+
+              </a>
+
+              <button class="btn btn-outline-danger btn-sm"
+                      onclick="deleteAndRedirect('<%= patient._id %>', '<%= xray._id %>')">
+
+                <i class="bi bi-trash3 me-1"></i>
+                حذف هذه الأشعة
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <%- include('../partials/footer') %>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="/js/main.js"></script>
+
+<script>
+
+const img = document.getElementById('xrayImage');
+
+let brightness = 100;
+let contrast   = 100;
+let rotation   = 0;
+let scale      = 1;
+let isInverted = false;
+
+function applyFilters() {
+
+  if (!img) return;
+
+  const invertVal = isInverted ? 100 : 0;
+
+  img.style.filter =
+    `brightness(${brightness}%)
+     contrast(${contrast}%)
+     invert(${invertVal}%)`;
+
+  img.style.transform =
+    `rotate(${rotation}deg) scale(${scale})`;
+}
+
+function adjustBrightness(delta) {
+
+  brightness = Math.max(
+    10,
+    Math.min(300, brightness + delta)
+  );
+
+  applyFilters();
+}
+
+function adjustContrast(delta) {
+
+  contrast = Math.max(
+    50,
+    Math.min(400, contrast + delta)
+  );
+
+  applyFilters();
+}
+
+function rotateImage() {
+
+  rotation = (rotation + 90) % 360;
+
+  applyFilters();
+}
+
+function zoomIn() {
+
+  scale = Math.min(4, scale + 0.25);
+
+  applyFilters();
+}
+
+function zoomOut() {
+
+  scale = Math.max(0.25, scale - 0.25);
+
+  applyFilters();
+}
+
+function invertColors() {
+
+  isInverted = !isInverted;
+
+  applyFilters();
+
+  document
+    .getElementById('invertBtn')
+    ?.classList.toggle('active', isInverted);
+}
+
+function resetFilters() {
+
+  brightness = 100;
+  contrast   = 100;
+  rotation   = 0;
+  scale      = 1;
+  isInverted = false;
+
+  applyFilters();
+
+  document
+    .getElementById('invertBtn')
+    ?.classList.remove('active');
+}
+
+img?.addEventListener('wheel', e => {
+
+  e.preventDefault();
+
+  if (e.deltaY < 0) {
+    zoomIn();
+  } else {
+    zoomOut();
+  }
+
+});
+
+function toggleEditNotes() {
+
+  const view = document.getElementById('notesView');
+
+  const edit = document.getElementById('notesEdit');
+
+  const isEditing =
+    edit.style.display !== 'none';
+
+  view.style.display =
+    isEditing ? 'block' : 'none';
+
+  edit.style.display =
+    isEditing ? 'none' : 'block';
+}
+
+async function saveNotes() {
+
+  try {
+
+    const doctorNotes =
+      document.getElementById('editNotes').value;
+
+    const xrayType =
+      document.getElementById('editXrayType').value;
+
+    const relatedTeeth =
+      document.getElementById('editTeeth').value;
+
+    const res = await fetch(
+      '/patients/<%= patient._id %>/xrays/<%= xray._id %>',
+      {
+        method: 'PATCH',
+
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+          doctorNotes,
+          xrayType,
+          relatedTeeth
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data.success) {
+      throw new Error(data.message);
+    }
+
+    document.getElementById('notesView').innerHTML =
+      doctorNotes
+      ? `
+        <p class="mb-0 small" style="line-height:1.8;">
+          ${doctorNotes}
+        </p>
+      `
+      : `
+        <p class="text-muted text-center py-3 small mb-0">
+          لا توجد ملاحظات بعد
+        </p>
+      `;
+
+    toggleEditNotes();
+
+    alert('✅ ' + data.message);
+
+  } catch (err) {
+
+    alert('❌ ' + err.message);
+  }
+}
+
+async function deleteAndRedirect(patientId, xrayId) {
+
+  const confirmed = confirm(
+    'هل أنت متأكد من حذف هذه الأشعة نهائياً؟'
+  );
+
+  if (!confirmed) return;
+
+  try {
+
+    const res = await fetch(
+      `/patients/${patientId}/xrays/${xrayId}`,
+      {
+        method:'DELETE',
+
+        headers:{
+          'Content-Type':'application/json'
+        }
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data.success) {
+      throw new Error(data.message);
+    }
+
+    window.location.href =
+      `/patients/${patientId}/xrays`;
+
+  } catch (err) {
+
+    alert('❌ ' + err.message);
+  }
+}
+
+</script>
+
+</body>
+</html>
