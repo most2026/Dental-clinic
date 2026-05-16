@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('../partials/sidebar') %>
+  <div class="main-content">
+    <%- include('../partials/navbar') %>
+    <main class="page-content">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">➕ إنشاء حساب جديد</h1>
+          <p class="page-subtitle">إضافة مستخدم جديد للنظام</p>
+        </div>
+        <a href="/auth/profile" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-right me-1"></i> العودة
+        </a>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-7">
+
+          <% if (error) { %>
+            <div class="flash-alert alert alert-danger alert-dismissible">
+              ❌ <%= error %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <% } %>
+
+          <div class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">👤 بيانات المستخدم الجديد</h2>
+            </div>
+            <div class="app-card-body">
+              <form method="POST" action="/auth/register" data-loading="true" novalidate>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      الاسم الكامل <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" name="name" class="form-control"
+                      value="<%= formData.name || '' %>"
+                      placeholder="د. أحمد الأنصاري" required/>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      الدور الوظيفي <span class="text-danger">*</span>
+                    </label>
+                    <select name="role" class="form-select" required>
+                      <option value="doctor"       <%= formData.role==='doctor'?'selected':'' %>>🩺 طبيب أسنان</option>
+                      <option value="receptionist" <%= formData.role==='receptionist'?'selected':'' %>>👩‍💼 موظف استقبال</option>
+                      <option value="admin"        <%= formData.role==='admin'?'selected':'' %>>⚙️ مدير النظام</option>
+                    </select>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label fw-semibold">
+                      البريد الإلكتروني <span class="text-danger">*</span>
+                    </label>
+                    <input type="email" name="email" class="form-control"
+                      value="<%= formData.email || '' %>"
+                      placeholder="user@clinic.com" dir="ltr" required/>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      كلمة المرور <span class="text-danger">*</span>
+                    </label>
+                    <input type="password" name="password" class="form-control"
+                      placeholder="6 أحرف على الأقل" required minlength="6"/>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      تأكيد كلمة المرور <span class="text-danger">*</span>
+                    </label>
+                    <input type="password" name="confirmPassword" class="form-control"
+                      placeholder="أعد كتابة كلمة المرور" required/>
+                  </div>
+
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end mt-4">
+                  <a href="/" class="btn btn-outline-secondary">إلغاء</a>
+                  <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-person-plus-fill me-1"></i> إنشاء الحساب
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
+</body>
+</html>

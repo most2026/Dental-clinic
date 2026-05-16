@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('../partials/sidebar') %>
+  <div class="main-content">
+    <%- include('../partials/navbar') %>
+    <main class="page-content">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">👤 الملف الشخصي</h1>
+          <p class="page-subtitle">إدارة بياناتك وكلمة مرورك</p>
+        </div>
+        <% if (user && user.role === 'admin') { %>
+          <a href="/auth/register" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus me-1"></i> إضافة مستخدم
+          </a>
+        <% } %>
+      </div>
+
+      <div class="row g-4 justify-content-center">
+
+        <%# بطاقة المعلومات %>
+        <div class="col-12 col-lg-4">
+          <div class="app-card text-center">
+            <div class="app-card-body">
+              <div style="width:80px;height:80px;border-radius:50%;
+                          background:linear-gradient(135deg,#0d6efd,#6610f2);
+                          display:inline-flex;align-items:center;justify-content:center;
+                          font-size:30px;color:#fff;font-weight:800;margin-bottom:16px;">
+                <%= user ? user.name.charAt(0) : 'م' %>
+              </div>
+              <h3 class="fw-bold mb-1"><%= user ? user.name : '—' %></h3>
+              <p class="text-muted small mb-2" dir="ltr"><%= user ? user.email : '—' %></p>
+              <% var roleBadge = { admin:'bg-danger', doctor:'bg-primary', receptionist:'bg-success' }; %>
+              <span class="badge <%= roleBadge[user?.role] || 'bg-secondary' %> mb-3">
+                <%= user ? user.roleLabel : '—' %>
+              </span>
+              <div class="text-muted small">
+                <div>📅 تسجيل منذ: <%= user ? new Date(user.createdAt).toLocaleDateString('ar-IQ',{year:'numeric',month:'long'}) : '—' %></div>
+                <div class="mt-1">🕐 آخر دخول: <%= user && user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('ar-IQ') : 'أول مرة' %></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <%# نموذج التعديل %>
+        <div class="col-12 col-lg-8">
+
+          <% if (error) { %>
+            <div class="flash-alert alert alert-danger alert-dismissible">
+              ❌ <%= error %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <% } %>
+          <% if (success) { %>
+            <div class="flash-alert alert alert-success alert-dismissible">
+              ✅ <%= success %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <% } %>
+
+          <form method="POST" action="/auth/profile" data-loading="true">
+
+            <div class="app-card mb-3">
+              <div class="app-card-header">
+                <h2 class="app-card-title">✏️ تعديل البيانات</h2>
+              </div>
+              <div class="app-card-body">
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">الاسم الكامل</label>
+                  <input type="text" name="name" class="form-control"
+                    value="<%= user ? user.name : '' %>"/>
+                </div>
+                <div class="mb-0">
+                  <label class="form-label fw-semibold">البريد الإلكتروني</label>
+                  <input type="email" class="form-control bg-light"
+                    value="<%= user ? user.email : '' %>" disabled dir="ltr"/>
+                  <div class="form-text">لا يمكن تغيير البريد الإلكتروني</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="app-card mb-3">
+              <div class="app-card-header">
+                <h2 class="app-card-title">🔒 تغيير كلمة المرور</h2>
+                <span class="badge bg-secondary-subtle text-secondary">اختياري</span>
+              </div>
+              <div class="app-card-body">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label fw-semibold">كلمة المرور الحالية</label>
+                    <input type="password" name="currentPassword" class="form-control"
+                      placeholder="أدخلها فقط إذا أردت التغيير"/>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">كلمة المرور الجديدة</label>
+                    <input type="password" name="newPassword" class="form-control"
+                      placeholder="6 أحرف على الأقل"/>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">تأكيد كلمة المرور الجديدة</label>
+                    <input type="password" name="confirmPassword" class="form-control"
+                      placeholder="أعد الكتابة"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <a href="/" class="btn btn-outline-secondary">إلغاء</a>
+              <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-circle-fill me-1"></i> حفظ التعديلات
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
+</body>
+</html>

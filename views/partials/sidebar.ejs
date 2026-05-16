@@ -1,10 +1,10 @@
 <%# ============================================================
-     views/partials/sidebar.ejs — الشريط الجانبي
+     views/partials/sidebar.ejs — الشريط الجانبي النهائي
      ============================================================ %>
 
 <aside class="sidebar" id="appSidebar">
 
-  <%# الشعار %>
+  <%# ── الشعار ─────────────────────────────────────────────── %>
   <a href="/" class="sidebar-brand">
     <div class="sidebar-brand-icon">🦷</div>
     <div class="sidebar-brand-text">
@@ -13,10 +13,9 @@
     </div>
   </a>
 
-  <%# قائمة التنقل %>
+  <%# ── قائمة التنقل ──────────────────────────────────────── %>
   <nav class="sidebar-nav">
 
-    <%# المجموعة الرئيسية %>
     <p class="sidebar-section-title">الرئيسية</p>
 
     <a href="/"
@@ -25,30 +24,26 @@
       لوحة التحكم
     </a>
 
-    <%# إدارة المرضى %>
-<p class="sidebar-section-title">المرضى</p>
+    <p class="sidebar-section-title">المرضى</p>
 
-<%# تم تغيير .startsWith إلى === لضمان عدم التداخل %>
-<a href="/patients"
-   class="sidebar-link <%= currentPath === '/patients' ? 'active' : '' %>">
-  <span class="sidebar-link-icon">👥</span>
-  المرضى
-</a>
+    <a href="/patients"
+       class="sidebar-link <%= currentPath.startsWith('/patients') && !currentPath.includes('/xrays') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">👥</span>
+      المرضى
+    </a>
 
-<a href="/patients/new"
-   class="sidebar-link <%= currentPath === '/patients/new' ? 'active' : '' %>">
-  <span class="sidebar-link-icon">➕</span>
-  مريض جديد
-</a>
-    <%# المواعيد %>
+    <a href="/patients/new"
+       class="sidebar-link <%= currentPath === '/patients/new' ? 'active' : '' %>">
+      <span class="sidebar-link-icon">➕</span>
+      مريض جديد
+    </a>
+
     <p class="sidebar-section-title">المواعيد</p>
 
     <a href="/appointments"
        class="sidebar-link <%= currentPath === '/appointments' ? 'active' : '' %>">
       <span class="sidebar-link-icon">📅</span>
       جميع المواعيد
-      <%# Badge ديناميكي — سيُفعَّل لاحقاً %>
-      <%# <span class="badge bg-primary sidebar-badge">5</span> %>
     </a>
 
     <a href="/appointments/today"
@@ -63,11 +58,10 @@
       حجز موعد
     </a>
 
-    <%# المالية %>
     <p class="sidebar-section-title">المالية</p>
 
     <a href="/invoices"
-       class="sidebar-link <%= currentPath.startsWith('/invoices') ? 'active' : '' %>">
+       class="sidebar-link <%= currentPath === '/invoices' ? 'active' : '' %>">
       <span class="sidebar-link-icon">🧾</span>
       الفواتير
     </a>
@@ -78,8 +72,13 @@
       فاتورة جديدة
     </a>
 
-    <%# الإعدادات %>
-    <p class="sidebar-section-title">الإعدادات</p>
+    <p class="sidebar-section-title">التقارير والإعدادات</p>
+
+    <a href="/reports"
+       class="sidebar-link <%= currentPath.startsWith('/reports') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">📊</span>
+      التقارير
+    </a>
 
     <a href="/treatments"
        class="sidebar-link <%= currentPath.startsWith('/treatments') ? 'active' : '' %>">
@@ -95,16 +94,95 @@
 
   </nav>
 
-  <%# أسفل الـ Sidebar %>
-  <div class="sidebar-footer">
-    <div class="sidebar-footer-user">
-      <div class="sidebar-footer-avatar">د</div>
-      <div class="sidebar-footer-info">
-        <div class="sidebar-footer-name">د. أحمد الأنصاري</div>
-        <div class="sidebar-footer-role">طبيب أسنان</div>
+  <%# ── أسفل الـ Sidebar ────────────────────────────────────── %>
+<div class="sidebar-footer">
+
+  <%# نتحقق بـ locals.user لضمان الوصول الصحيح %>
+  <% if (locals.user) { %>
+
+    <%# معلومات المستخدم %>
+    <div class="sidebar-footer-user" style="margin-bottom: 10px;">
+
+      <div class="sidebar-footer-avatar">
+        <%= locals.user.name.charAt(0).toUpperCase() %>
       </div>
+
+      <div class="sidebar-footer-info">
+        <div class="sidebar-footer-name">
+          <%= locals.user.name %>
+        </div>
+        <div class="sidebar-footer-role">
+          <%= locals.user.roleLabel %>
+        </div>
+      </div>
+
     </div>
-  </div>
+
+    <%# زرا حسابي وخروج %>
+    <div style="display: flex; gap: 6px;">
+
+      <a href="/auth/profile"
+         style="
+           flex: 1;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           gap: 5px;
+           padding: 8px 4px;
+           border-radius: 9px;
+           font-size: 12px;
+           font-weight: 600;
+           text-decoration: none;
+           background: rgba(255,255,255,0.08);
+           color: #a8b2d8;
+           border: 1px solid rgba(255,255,255,0.08);
+           transition: background 0.2s;
+         ">
+        ⚙️ حسابي
+      </a>
+
+      <a href="/auth/logout"
+         style="
+           flex: 1;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           gap: 5px;
+           padding: 8px 4px;
+           border-radius: 9px;
+           font-size: 12px;
+           font-weight: 600;
+           text-decoration: none;
+           background: rgba(220,53,69,0.12);
+           color: #f87171;
+           border: 1px solid rgba(220,53,69,0.2);
+           transition: background 0.2s;
+         ">
+        🚪 خروج
+      </a>
+
+    </div>
+
+  <% } else { %>
+
+    <a href="/auth/login"
+       style="
+         display: block;
+         text-align: center;
+         padding: 10px;
+         border-radius: 10px;
+         background: rgba(13,110,253,0.18);
+         color: #60a5fa;
+         font-size: 13px;
+         font-weight: 600;
+         text-decoration: none;
+       ">
+      🔑 تسجيل الدخول
+    </a>
+
+  <% } %>
+
+</div>
 
 </aside>
 

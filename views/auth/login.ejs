@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"/>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Tajawal', sans-serif;
+      min-height: 100vh; margin: 0;
+      background: linear-gradient(135deg, #1a1f36 0%, #0d1b4b 50%, #0d6efd22 100%);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .login-wrapper {
+      width: 100%; max-width: 440px;
+    }
+    .login-brand {
+      text-align: center; margin-bottom: 32px;
+    }
+    .login-brand-icon {
+      width: 72px; height: 72px; border-radius: 20px;
+      background: linear-gradient(135deg, #0d6efd, #6610f2);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 34px; margin-bottom: 14px;
+      box-shadow: 0 8px 32px rgba(13,110,253,0.4);
+    }
+    .login-brand-name {
+      color: #fff; font-size: 20px; font-weight: 700; display: block; margin-bottom: 4px;
+    }
+    .login-brand-sub {
+      color: rgba(255,255,255,.5); font-size: 13px;
+    }
+    .login-card {
+      background: #fff; border-radius: 20px; padding: 36px 32px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+    }
+    .login-title {
+      font-size: 20px; font-weight: 700; color: #1a202c;
+      margin: 0 0 6px; text-align: center;
+    }
+    .login-sub {
+      font-size: 13px; color: #64748b;
+      text-align: center; margin: 0 0 28px;
+    }
+    .form-label    { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    .form-control  {
+      border-radius: 10px; border: 1.5px solid #e2e8f0;
+      padding: 11px 14px; font-size: 14px; font-family: 'Tajawal', sans-serif;
+      transition: all .2s;
+    }
+    .form-control:focus {
+      border-color: #0d6efd; box-shadow: 0 0 0 3px rgba(13,110,253,.12);
+    }
+    .btn-login {
+      width: 100%; padding: 12px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, #0d6efd, #6610f2);
+      color: #fff; font-size: 15px; font-weight: 700;
+      font-family: 'Tajawal', sans-serif; cursor: pointer;
+      transition: all .2s; margin-top: 8px;
+      box-shadow: 0 4px 16px rgba(13,110,253,.35);
+    }
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(13,110,253,.4);
+    }
+    .btn-login:disabled { opacity: .7; transform: none; }
+    .alert-error {
+      background: #fee2e2; border: 1px solid #fca5a5;
+      color: #991b1b; border-radius: 10px; padding: 12px 16px;
+      font-size: 14px; margin-bottom: 20px; display: flex; gap: 8px;
+    }
+    .alert-info {
+      background: #dcfce7; border: 1px solid #86efac;
+      color: #166534; border-radius: 10px; padding: 12px 16px;
+      font-size: 14px; margin-bottom: 20px; display: flex; gap: 8px;
+    }
+    .password-wrapper { position: relative; }
+    .toggle-password {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: #94a3b8;
+      font-size: 16px; padding: 4px; line-height: 1;
+    }
+    .form-check-label { font-size: 13px; color: #64748b; }
+    .login-footer {
+      text-align: center; margin-top: 20px;
+      color: rgba(255,255,255,.4); font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-wrapper">
+
+    <%# الشعار %>
+    <div class="login-brand">
+      <div class="login-brand-icon">🦷</div>
+      <span class="login-brand-name"><%= clinicName %></span>
+      <span class="login-brand-sub">نظام إدارة العيادة</span>
+    </div>
+
+    <%# بطاقة تسجيل الدخول %>
+    <div class="login-card">
+      <h1 class="login-title">مرحباً بعودتك 👋</h1>
+      <p class="login-sub">سجّل دخولك للمتابعة</p>
+
+      <%# رسالة خطأ %>
+      <% if (error) { %>
+        <div class="alert-error">
+          <span>❌</span>
+          <span><%= error %></span>
+        </div>
+      <% } %>
+
+      <%# رسالة معلومات %>
+      <% if (info) { %>
+        <div class="alert-info">
+          <span>✅</span>
+          <span><%= info %></span>
+        </div>
+      <% } %>
+
+      <form method="POST" action="/auth/login" id="loginForm" novalidate>
+
+        <div class="mb-3">
+          <label class="form-label" for="email">
+            📧 البريد الإلكتروني
+          </label>
+          <input
+            type="email"
+            class="form-control"
+            id="email"
+            name="email"
+            placeholder="example@clinic.com"
+            dir="ltr"
+            required
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="password">
+            🔒 كلمة المرور
+          </label>
+          <div class="password-wrapper">
+            <input
+              type="password"
+              class="form-control"
+              id="password"
+              name="password"
+              placeholder="••••••••"
+              required
+              autocomplete="current-password"
+              style="padding-left: 42px;"
+            />
+            <button type="button" class="toggle-password"
+              onclick="togglePass()" id="toggleBtn" title="إظهار/إخفاء كلمة المرور">
+              👁
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" name="remember" id="remember"/>
+            <label class="form-check-label" for="remember">تذكرني لمدة 30 يوماً</label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login" id="submitBtn">
+          تسجيل الدخول
+        </button>
+
+      </form>
+    </div>
+
+    <div class="login-footer">
+      &copy; <%= currentYear %> <%= clinicName %> — جميع الحقوق محفوظة
+    </div>
+
+  </div>
+
+  <script>
+    // إظهار / إخفاء كلمة المرور
+    function togglePass() {
+      var input = document.getElementById('password');
+      var btn   = document.getElementById('toggleBtn');
+      if (input.type === 'password') {
+        input.type   = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type   = 'password';
+        btn.textContent = '👁';
+      }
+    }
+
+    // مؤشر تحميل عند الإرسال
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      var email    = document.getElementById('email').value.trim();
+      var password = document.getElementById('password').value;
+      if (!email || !password) {
+        e.preventDefault();
+        return;
+      }
+      var btn      = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ جاري تسجيل الدخول...';
+    });
+  </script>
+</body>
+</html>
