@@ -20,5 +20,6 @@ router.use('/patients/:patientId/xrays',     require('./xrayRoutes'));
 router.use('/appointments', require('./appointmentRoutes'));
 router.use('/invoices',     require('./invoiceRoutes'));
 router.use ('/settings',                   require('./settingsRoutes'));
+router.use ('/treatments',                 require('./treatmentRoutes'));
 
 module.exports = router;
