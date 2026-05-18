@@ -21,5 +21,6 @@ router.use('/appointments', require('./appointmentRoutes'));
 router.use('/invoices',     require('./invoiceRoutes'));
 router.use ('/settings',                   require('./settingsRoutes'));
 router.use ('/treatments',                 require('./treatmentRoutes'));
+router.use('/treatment-plans', require('./treatmentPlanRoutes'));
 
 module.exports = router;

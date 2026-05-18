@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .plan-card {
+      background:#fff; border-radius:14px; border:1.5px solid #eef0f5;
+      box-shadow:0 2px 14px rgba(0,0,0,.06); transition:all .2s; overflow:hidden;
+    }
+    .plan-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,.1); border-color:#0d6efd44; }
+    .plan-badge-aligner  { background:#e0f2fe; color:#0369a1; }
+    .plan-badge-metal    { background:#f3f4f6; color:#374151; }
+    .plan-badge-ceramic  { background:#fef3c7; color:#92400e; }
+    .plan-badge-lingual  { background:#ede9fe; color:#5b21b6; }
+    .plan-badge-retainer { background:#dcfce7; color:#166534; }
+    .plan-badge-other    { background:#f0fdf4; color:#166534; }
+    .status-planning   { background:#dbeafe; color:#1d4ed8; }
+    .status-active     { background:#dcfce7; color:#166534; }
+    .status-paused     { background:#fef3c7; color:#92400e; }
+    .status-completed  { background:#f3f4f6; color:#6b7280; }
+    .status-cancelled  { background:#fee2e2; color:#991b1b; }
+    .progress-thin { height:6px; border-radius:10px; background:#f0f2f7; }
+    .progress-thin .bar {
+      height:100%; border-radius:10px;
+      background:linear-gradient(90deg,#0d6efd,#6610f2);
+      transition:width .6s ease;
+    }
+    .tray-counter {
+      display:inline-flex; align-items:center; gap:6px;
+      background:#e0f2fe; border-radius:10px; padding:4px 10px;
+      font-size:12px; font-weight:700; color:#0369a1;
+    }
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('../partials/sidebar') %>
+  <div class="main-content">
+    <%- include('../partials/navbar') %>
+    <main class="page-content">
+
+      <% if (successMsg) { %>
+        <div class="flash-alert alert alert-success alert-dismissible">✅ <%= successMsg %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      <% } %>
+
+      <%# رأس الصفحة %>
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">🦷 خطط العلاج والتقويم</h1>
+          <p class="page-subtitle">
+            <strong><%= plans.length %></strong> خطة —
+            <span class="text-success fw-semibold"><%= stats.active %> نشطة</span> •
+            <span class="text-primary fw-semibold"><%= stats.orthodontic %> تقويم</span>
+          </p>
+        </div>
+        <a href="/treatment-plans/new" class="btn btn-primary">
+          <i class="bi bi-plus-circle me-1"></i> خطة جديدة
+        </a>
+      </div>
+
+      <%# بطاقات الإحصاء %>
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#e8f0fe;">📋</div>
+            <div class="stat-card-value"><%= stats.total %></div>
+            <div class="stat-card-label">إجمالي الخطط</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#dcfce7;">▶️</div>
+            <div class="stat-card-value text-success"><%= stats.active %></div>
+            <div class="stat-card-label">خطط نشطة</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#e0f2fe;">😁</div>
+            <div class="stat-card-value text-info"><%= stats.orthodontic %></div>
+            <div class="stat-card-label">حالات تقويم</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#f3f4f6;">✅</div>
+            <div class="stat-card-value text-muted"><%= stats.completed %></div>
+            <div class="stat-card-label">مكتملة</div>
+          </div>
+        </div>
+      </div>
+
+      <%# فلاتر البحث %>
+      <div class="app-card mb-4">
+        <div class="app-card-body">
+          <form method="GET" action="/treatment-plans" class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+              <input type="text" name="search" class="form-control"
+                placeholder="🔍 بحث باسم المريض أو الخطة..."
+                value="<%= filters.search %>"/>
+            </div>
+            <div class="col-6 col-md-3">
+              <select name="category" class="form-select">
+                <option value="">كل الفئات</option>
+                <% Object.entries(categoryLabels).forEach(function([val,label]) { %>
+                  <option value="<%= val %>" <%= filters.category===val?'selected':'' %>><%= label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <select name="status" class="form-select">
+                <option value="">كل الحالات</option>
+                <option value="active"    <%= filters.status==='active'?'selected':'' %>>نشطة</option>
+                <option value="planning"  <%= filters.status==='planning'?'selected':'' %>>تخطيط</option>
+                <option value="completed" <%= filters.status==='completed'?'selected':'' %>>مكتملة</option>
+                <option value="paused"    <%= filters.status==='paused'?'selected':'' %>>موقوفة</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+              <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-search"></i></button>
+              <a href="/treatment-plans" class="btn btn-outline-secondary flex-grow-1">مسح</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <%# قائمة الخطط %>
+      <% if (plans.length === 0) { %>
+        <div class="app-card">
+          <div class="app-card-body text-center py-5 text-muted">
+            <div style="font-size:3.5rem; margin-bottom:14px;">🦷</div>
+            <h5>لا توجد خطط علاج بعد</h5>
+            <a href="/treatment-plans/new" class="btn btn-primary btn-sm mt-2">إنشاء أول خطة</a>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="row g-3">
+          <% plans.forEach(function(plan) {
+            var completion = plan.completionPercentage || 0;
+            var alignerPct = plan.alignerProgress      || 0;
+            var isAligner  = plan.orthodonticType === 'clear_aligner';
+          %>
+          <div class="col-12 col-lg-6">
+            <div class="plan-card">
+              <div class="p-3 pb-2">
+
+                <%# رأس البطاقة %>
+                <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                  <div class="flex-grow-1">
+                    <a href="/treatment-plans/<%= plan._id %>"
+                       class="fw-bold text-decoration-none text-dark" style="font-size:15px;">
+                      <%= plan.title %>
+                    </a>
+                    <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                      <%# فئة العلاج %>
+                      <span class="badge rounded-pill"
+                        style="background:#e8f0fe; color:#1d4ed8; font-size:10px;">
+                        <%= categoryLabels[plan.category] %>
+                      </span>
+                      <%# نوع التقويم %>
+                      <% if (plan.orthodonticType) { %>
+                        <span class="badge rounded-pill plan-badge-<%= plan.orthodonticType %>"
+                          style="font-size:10px;">
+                          <%= orthodonticLabels[plan.orthodonticType] %>
+                        </span>
+                      <% } %>
+                      <%# الحالة %>
+                      <span class="badge rounded-pill status-<%= plan.status %>"
+                        style="font-size:10px;">
+                        <%= statusLabels[plan.status] %>
+                      </span>
+                    </div>
+                  </div>
+
+                  <%# الدائرة %>
+                  <div style="position:relative; width:52px; height:52px; flex-shrink:0;">
+                    <svg viewBox="0 0 36 36" style="width:52px;height:52px;transform:rotate(-90deg);">
+                      <circle cx="18" cy="18" r="15.9"
+                        fill="none" stroke="#f0f2f7" stroke-width="3"/>
+                      <circle cx="18" cy="18" r="15.9"
+                        fill="none" stroke="#0d6efd" stroke-width="3"
+                        stroke-dasharray="<%= completion %> 100"
+                        stroke-linecap="round"/>
+                    </svg>
+                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                                font-size:11px;font-weight:800;color:#0d6efd;">
+                      <%= completion %>%
+                    </div>
+                  </div>
+                </div>
+
+                <%# المريض %>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <div class="patient-avatar" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">
+                    <%= plan.patient.firstName.charAt(0) %>
+                  </div>
+                  <div>
+                    <a href="/patients/<%= plan.patient._id %>"
+                       class="small fw-semibold text-decoration-none text-dark">
+                      <%= plan.patient.firstName %> <%= plan.patient.lastName %>
+                    </a>
+                    <span class="text-muted small ms-1">(<%= plan.patient.patientCode %>)</span>
+                  </div>
+                </div>
+
+                <%# tracker للتقويم الشفاف %>
+                <% if (isAligner && plan.totalAlignersTrays) { %>
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="tray-counter">
+                      😁 طقم <%= plan.currentAlignerTray || 0 %> / <%= plan.totalAlignersTrays %>
+                    </span>
+                    <div class="flex-grow-1 progress-thin">
+                      <div class="bar" style="width:<%= alignerPct %>%;
+                        background:linear-gradient(90deg,#06b6d4,#0891b2);"></div>
+                    </div>
+                    <small class="text-muted fw-bold" style="font-size:11px;"><%= alignerPct %>%</small>
+                  </div>
+                <% } %>
+
+                <%# شريط تقدم المراحل %>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <small class="text-muted" style="white-space:nowrap; font-size:11px;">
+                    المراحل: <%= plan.completedStagesCount %>/<%= plan.stages.length %>
+                  </small>
+                  <div class="flex-grow-1 progress-thin">
+                    <div class="bar" style="width:<%= completion %>%;"></div>
+                  </div>
+                </div>
+
+                <%# تاريخ البداية والنهاية %>
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-muted">
+                    📅 بدأ: <%= new Date(plan.startDate).toLocaleDateString('ar-IQ',{day:'numeric',month:'short',year:'numeric'}) %>
+                    <% if (plan.estimatedEndDate) { %>
+                      — حتى: <%= new Date(plan.estimatedEndDate).toLocaleDateString('ar-IQ',{day:'numeric',month:'short',year:'numeric'}) %>
+                    <% } %>
+                  </small>
+                  <a href="/treatment-plans/<%= plan._id %>"
+                     class="btn btn-outline-primary btn-sm"
+                     style="font-size:11px; padding:3px 10px;">
+                    عرض <i class="bi bi-arrow-left-short"></i>
+                  </a>
+                </div>
+
+              </div>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
+</body>
+</html>

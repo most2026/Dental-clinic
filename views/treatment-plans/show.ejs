@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    /* ── Timeline ── */
+    .timeline { position:relative; padding-right:28px; }
+    .timeline::before {
+      content:''; position:absolute; right:10px; top:0; bottom:0;
+      width:2px; background:linear-gradient(180deg,#0d6efd,#6610f2);
+      border-radius:2px;
+    }
+    .timeline-item { position:relative; margin-bottom:28px; }
+    .timeline-dot {
+      position:absolute; right:-33px; top:14px;
+      width:18px; height:18px; border-radius:50%;
+      background:#0d6efd; border:3px solid #fff;
+      box-shadow:0 0 0 3px #0d6efd44;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .timeline-dot.completed { background:#198754; box-shadow:0 0 0 3px #19875433; }
+    .timeline-dot.pending   { background:#94a3b8; box-shadow:0 0 0 3px #94a3b833; }
+
+    .timeline-card {
+      background:#fff; border-radius:12px; border:1.5px solid #eef0f5;
+      box-shadow:0 2px 10px rgba(0,0,0,.05); overflow:hidden;
+    }
+    .timeline-card-header {
+      padding:12px 16px; border-bottom:1px solid #f0f2f7;
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+    }
+    .timeline-card-body { padding:14px 16px; }
+
+    /* ── Aligner Tracker ── */
+    .aligner-tracker {
+      background:linear-gradient(135deg,#e0f2fe,#bae6fd);
+      border-radius:14px; padding:20px; margin-bottom:16px;
+      border:1.5px solid #7dd3fc;
+    }
+    .tray-grid {
+      display:flex; flex-wrap:wrap; gap:4px; margin-top:12px;
+    }
+    .tray-cell {
+      width:28px; height:28px; border-radius:6px; border:1.5px solid #bae6fd;
+      display:flex; align-items:center; justify-content:center;
+      font-size:9px; font-weight:700; cursor:default; transition:.15s;
+    }
+    .tray-cell.done    { background:#0ea5e9; color:#fff; border-color:#0284c7; }
+    .tray-cell.current { background:#0369a1; color:#fff; border-color:#0369a1;
+                          box-shadow:0 0 0 3px rgba(3,105,161,.3); transform:scale(1.1); }
+    .tray-cell.future  { background:#f0f9ff; color:#94a3b8; }
+
+    /* ── Pain Meter ── */
+    .pain-bar { height:8px; border-radius:10px; background:#f0f2f7; overflow:hidden; }
+    .pain-fill { height:100%; border-radius:10px; }
+
+    /* ── Photo Grid ── */
+    .stage-photos { display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:6px; }
+    .stage-photo-item {
+      border-radius:8px; overflow:hidden; aspect-ratio:1; cursor:pointer;
+      border:1.5px solid #eef0f5; background:#0f1117; position:relative;
+    }
+    .stage-photo-item img { width:100%; height:100%; object-fit:cover; }
+    .stage-photo-label {
+      position:absolute; bottom:0; left:0; right:0;
+      background:rgba(0,0,0,.5); color:#fff; font-size:9px;
+      padding:2px 4px; text-align:center;
+    }
+
+    /* ── Wire Badge ── */
+    .wire-badge {
+      display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+      border-radius:8px; font-size:12px; font-weight:600;
+      background:#f3f4f6; color:#374151; border:1px solid #e5e7eb;
+    }
+
+    /* ── Progress Ring ── */
+    .progress-ring-wrap { position:relative; display:inline-block; }
+    .progress-ring-wrap .ring-label {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      text-align:center; line-height:1.2;
+    }
+
+    /* Lightbox */
+    #photoLightbox {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.9);
+      z-index:9999; align-items:center; justify-content:center; flex-direction:column;
+    }
+    #photoLightbox img { max-width:90vw; max-height:80vh; object-fit:contain; border-radius:8px; }
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('../partials/sidebar') %>
+  <div class="main-content">
+    <%- include('../partials/navbar') %>
+    <main class="page-content">
+
+      <% if (successMsg) { %>
+        <div class="flash-alert alert alert-success alert-dismissible">✅ <%= successMsg %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+      <% } %>
+
+      <%# رأس الصفحة %>
+      <div class="page-header">
+        <div>
+          <h1 class="page-title"><%= plan.title %></h1>
+          <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
+            <span class="badge bg-primary-subtle text-primary">
+              <%= categoryLabels[plan.category] %>
+            </span>
+            <% if (plan.orthodonticType) { %>
+              <span class="badge bg-info-subtle text-info">
+                <%= orthodonticLabels[plan.orthodonticType] %>
+              </span>
+            <% } %>
+            <span class="status-badge badge-<%= plan.status %>">
+              <%= statusLabels[plan.status] %>
+            </span>
+          </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="/treatment-plans/<%= plan._id %>/stages/add"
+             class="btn btn-success btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> إضافة مرحلة
+          </a>
+          <a href="/patients/<%= plan.patient._id %>"
+             class="btn btn-outline-primary btn-sm">
+            👤 ملف المريض
+          </a>
+          <a href="/treatment-plans" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-right me-1"></i> العودة
+          </a>
+        </div>
+      </div>
+
+      <div class="row g-3">
+
+        <%# العمود الأيسر: الـ Tracker والمعلومات %>
+        <div class="col-12 col-lg-4">
+
+          <%# معلومات المريض %>
+          <div class="app-card mb-3">
+            <div class="app-card-header">
+              <h2 class="app-card-title">👤 المريض</h2>
+            </div>
+            <div class="app-card-body">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <div class="patient-avatar" style="width:42px;height:42px;font-size:17px;">
+                  <%= plan.patient.firstName.charAt(0) %>
+                </div>
+                <div>
+                  <div class="fw-bold"><%= plan.patient.firstName %> <%= plan.patient.lastName %></div>
+                  <code class="text-primary small"><%= plan.patient.patientCode %></code>
+                </div>
+              </div>
+              <div class="text-muted small">📞 <%= plan.patient.phone %></div>
+            </div>
+          </div>
+
+          <%# نسبة الإنجاز الكلية %>
+          <div class="app-card mb-3" style="background:linear-gradient(135deg,#1a1f36,#0d1b4b); border:none;">
+            <div class="app-card-body text-white">
+              <div class="d-flex align-items-center gap-3">
+                <div class="progress-ring-wrap">
+                  <svg viewBox="0 0 42 42" width="80" height="80">
+                    <circle cx="21" cy="21" r="18" fill="none"
+                      stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
+                    <circle cx="21" cy="21" r="18" fill="none"
+                      stroke="#0d6efd" stroke-width="4"
+                      stroke-dasharray="<%= plan.completionPercentage %> 100"
+                      stroke-linecap="round"
+                      transform="rotate(-90 21 21)"/>
+                  </svg>
+                  <div class="ring-label">
+                    <div style="font-size:16px;font-weight:800;">
+                      <%= plan.completionPercentage %>%
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:13px; opacity:.7;">نسبة الإنجاز</div>
+                  <div class="fw-bold"><%= plan.completedStagesCount %> / <%= plan.stages.length %> مرحلة</div>
+                  <div style="font-size:11px; opacity:.6; margin-top:4px;">
+                    بدأ: <%= new Date(plan.startDate).toLocaleDateString('ar-IQ',{day:'numeric',month:'short',year:'numeric'}) %>
+                  </div>
+                  <% if (plan.estimatedEndDate) { %>
+                    <div style="font-size:11px; opacity:.6;">
+                      ينتهي: <%= new Date(plan.estimatedEndDate).toLocaleDateString('ar-IQ',{day:'numeric',month:'short',year:'numeric'}) %>
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%# ── Tracker التقويم الشفاف ─────────────────── %>
+          <% if (plan.orthodonticType === 'clear_aligner' && plan.totalAlignersTrays) { %>
+            <div class="aligner-tracker mb-3">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="fw-bold" style="color:#0369a1; font-size:14px;">
+                  😁 متابعة الأطقم الشفافة
+                </span>
+                <span style="background:#0369a1; color:#fff; border-radius:8px;
+                             padding:3px 10px; font-size:12px; font-weight:700;">
+                  <%= plan.currentAlignerTray || 0 %> / <%= plan.totalAlignersTrays %>
+                </span>
+              </div>
+
+              <%# شريط التقدم %>
+              <div style="height:8px; background:rgba(3,105,161,.15);
+                          border-radius:10px; overflow:hidden; margin:8px 0;">
+                <div style="height:100%; border-radius:10px;
+                            background:linear-gradient(90deg,#0284c7,#0ea5e9);
+                            width:<%= plan.alignerProgress %>%;
+                            transition:width .6s ease;"></div>
+              </div>
+              <div style="font-size:11px; color:#0369a1; font-weight:600; margin-bottom:10px;">
+                <%= plan.alignerProgress %>% مكتمل
+                <% if (plan.alignerBrand) { %>
+                  — <%= plan.alignerBrand.charAt(0).toUpperCase() + plan.alignerBrand.slice(1) %>
+                <% } %>
+              </div>
+
+              <%# شبكة الأطقم %>
+              <div class="tray-grid">
+                <% for (var t = 1; t <= plan.totalAlignersTrays; t++) {
+                  var current = plan.currentAlignerTray || 0;
+                  var cls = t < current ? 'done' : t === current ? 'current' : 'future';
+                %>
+                  <div class="tray-cell <%= cls %>" title="طقم <%= t %>"><%= t %></div>
+                <% } %>
+              </div>
+
+              <div class="d-flex gap-2 mt-2" style="font-size:10px;">
+                <span style="display:flex;align-items:center;gap:3px;">
+                  <span style="width:10px;height:10px;border-radius:2px;background:#0ea5e9;"></span> مكتمل
+                </span>
+                <span style="display:flex;align-items:center;gap:3px;">
+                  <span style="width:10px;height:10px;border-radius:2px;background:#0369a1;"></span> حالي
+                </span>
+                <span style="display:flex;align-items:center;gap:3px;">
+                  <span style="width:10px;height:10px;border-radius:2px;background:#f0f9ff;border:1px solid #bae6fd;"></span> قادم
+                </span>
+              </div>
+            </div>
+          <% } %>
+
+          <%# تحديث الحالة %>
+          <div class="app-card mb-3">
+            <div class="app-card-header">
+              <h2 class="app-card-title">🔄 تحديث الحالة</h2>
+            </div>
+            <div class="app-card-body">
+              <div class="d-flex flex-column gap-2">
+                <% var statuses = ['planning','active','paused','completed','cancelled'];
+                   statuses.forEach(function(s) { %>
+                  <button class="btn btn-sm text-start <%= plan.status===s?'btn-primary':'btn-outline-secondary' %>"
+                    onclick="updatePlanStatus('<%= plan._id %>','<%= s %>', this)">
+                    <%= plan.status===s?'✅ ':'' %><%= statusLabels[s] %>
+                  </button>
+                <% }) %>
+              </div>
+              <% if (plan.totalCost > 0) { %>
+                <div class="mt-3 p-2 rounded-3 text-center"
+                     style="background:#f8f9fc; border:1px solid #eef0f5;">
+                  <div class="text-muted small">التكلفة الإجمالية</div>
+                  <div class="fw-bold text-primary">
+                    <%= plan.totalCost.toLocaleString('ar-IQ') %> <%= plan.currency %>
+                  </div>
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <%# أهداف العلاج %>
+          <% if (plan.treatmentGoals) { %>
+            <div class="app-card mb-3">
+              <div class="app-card-header">
+                <h2 class="app-card-title">🎯 أهداف العلاج</h2>
+              </div>
+              <div class="app-card-body">
+                <p class="small mb-0"><%= plan.treatmentGoals %></p>
+              </div>
+            </div>
+          <% } %>
+
+        </div>
+
+        <%# العمود الأيمن: Timeline المراحل %>
+        <div class="col-12 col-lg-8">
+
+          <%# زر إضافة مرحلة %>
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 class="page-title" style="font-size:17px; margin:0;">
+              📊 مراحل العلاج (<%= plan.stages.length %>)
+            </h2>
+            <a href="/treatment-plans/<%= plan._id %>/stages/add"
+               class="btn btn-success btn-sm">
+              <i class="bi bi-plus-circle me-1"></i> مرحلة جديدة
+            </a>
+          </div>
+
+          <% if (plan.stages.length === 0) { %>
+            <div class="app-card">
+              <div class="app-card-body text-center py-5 text-muted">
+                <div style="font-size:3rem; margin-bottom:12px;">📋</div>
+                <h5>لا توجد مراحل بعد</h5>
+                <p class="small">ابدأ بإضافة أول زيارة/مرحلة للمريض</p>
+                <a href="/treatment-plans/<%= plan._id %>/stages/add"
+                   class="btn btn-success btn-sm">
+                  <i class="bi bi-plus-circle me-1"></i> إضافة المرحلة الأولى
+                </a>
+              </div>
+            </div>
+          <% } else { %>
+
+            <div class="timeline">
+              <% plan.stages.forEach(function(stage) {
+                var dateStr = new Date(stage.visitDate).toLocaleDateString('ar-IQ',{
+                  weekday:'long', day:'numeric', month:'long', year:'numeric'
+                });
+              %>
+
+              <div class="timeline-item" id="stage-<%= stage._id %>">
+                <div class="timeline-dot <%= stage.isCompleted ? 'completed' : 'pending' %>">
+                  <% if (stage.isCompleted) { %>
+                    <i class="bi bi-check-lg" style="color:#fff;font-size:8px;"></i>
+                  <% } %>
+                </div>
+
+                <div class="timeline-card">
+                  <div class="timeline-card-header">
+                    <div>
+                      <span class="badge bg-primary-subtle text-primary fw-bold me-2">
+                        مرحلة <%= stage.stageNumber %>
+                      </span>
+                      <span class="small fw-semibold"><%= dateStr %></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <% if (stage.isCompleted) { %>
+                        <span class="status-badge badge-completed" style="font-size:10px;">مكتملة</span>
+                      <% } %>
+                      <button class="btn btn-outline-danger btn-sm btn-icon"
+                        style="font-size:11px;"
+                        onclick="deleteStage('<%= plan._id %>','<%= stage._id %>')">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="timeline-card-body">
+
+                    <%# ── للتقويم الشفاف %>
+                    <% if (stage.alignerTrayStart || stage.alignerTrayEnd) { %>
+                      <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                        <span class="tray-counter">
+                          😁 طقم <%= stage.alignerTrayStart || '?' %> ← <%= stage.alignerTrayEnd || '?' %>
+                        </span>
+                        <% if (stage.wearingHours) { %>
+                          <span style="background:#f0f9ff;color:#0369a1;padding:3px 8px;
+                                       border-radius:8px;font-size:11px;font-weight:600;">
+                            ⏱ <%= stage.wearingHours %> ساعة/يوم
+                          </span>
+                        <% } %>
+                      </div>
+                    <% } %>
+
+                    <%# ── للتقويم المعدني %>
+                    <% if (stage.wireType || stage.wireSize) { %>
+                      <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                        <% if (stage.wireType) { %>
+                          <span class="wire-badge">
+                            🔩 <%= wireLabels[stage.wireType] || stage.wireType %>
+                          </span>
+                        <% } %>
+                        <% if (stage.wireSize) { %>
+                          <span class="wire-badge">📏 <%= stage.wireSize %></span>
+                        <% } %>
+                        <% if (stage.bracketAdjustment) { %>
+                          <span class="wire-badge">🔧 <%= stage.bracketAdjustment %></span>
+                        <% } %>
+                      </div>
+                    <% } %>
+
+                    <%# الإجراءات %>
+                    <% if (stage.procedures && stage.procedures.length > 0) { %>
+                      <div class="mb-2">
+                        <div class="small fw-semibold text-muted mb-1">الإجراءات:</div>
+                        <div class="d-flex flex-wrap gap-1">
+                          <% stage.procedures.forEach(function(proc) { %>
+                            <span class="badge bg-light text-dark border" style="font-size:11px;">
+                              <%= proc %>
+                            </span>
+                          <% }) %>
+                        </div>
+                      </div>
+                    <% } %>
+
+                    <%# الألم والالتزام %>
+                    <div class="row g-2 mb-2">
+                      <% if (stage.painLevel !== undefined && stage.painLevel !== null) { %>
+                        <div class="col-6">
+                          <div class="small text-muted mb-1">
+                            مستوى الألم:
+                            <strong style="color:<%= stage.painLevel > 6 ? '#dc2626' : stage.painLevel > 3 ? '#d97706' : '#166534' %>">
+                              <%= stage.painLevel %>/10
+                            </strong>
+                          </div>
+                          <div class="pain-bar">
+                            <div class="pain-fill" style="
+                              width:<%= stage.painLevel * 10 %>%;
+                              background:<%= stage.painLevel > 6 ? '#dc2626' : stage.painLevel > 3 ? '#f59e0b' : '#16a34a' %>;">
+                            </div>
+                          </div>
+                        </div>
+                      <% } %>
+                      <% if (plan.orthodonticType === 'clear_aligner' && stage.compliance !== undefined) { %>
+                        <div class="col-6">
+                          <div class="small text-muted mb-1">
+                            الالتزام بالارتداء:
+                            <strong style="color:<%= stage.compliance >= 80 ? '#166534' : '#dc2626' %>">
+                              <%= stage.compliance %>%
+                            </strong>
+                          </div>
+                          <div class="pain-bar">
+                            <div class="pain-fill" style="
+                              width:<%= stage.compliance %>%;
+                              background:<%= stage.compliance >= 80 ? '#16a34a' : '#dc2626' %>;">
+                            </div>
+                          </div>
+                        </div>
+                      <% } %>
+                    </div>
+
+                    <%# ملاحظات حركة الأسنان %>
+                    <% if (stage.toothMovement) { %>
+                      <div class="mb-2 p-2 rounded-3" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                        <small class="text-success fw-semibold">🦷 حركة الأسنان:</small>
+                        <p class="small mb-0 mt-1"><%= stage.toothMovement %></p>
+                      </div>
+                    <% } %>
+
+                    <%# ملاحظات الطبيب %>
+                    <% if (stage.doctorNotes) { %>
+                      <div class="mb-2 p-2 rounded-3" style="background:#f8f9fc;">
+                        <small class="text-muted fw-semibold">📝 ملاحظات الطبيب:</small>
+                        <p class="small mb-0 mt-1"><%= stage.doctorNotes %></p>
+                      </div>
+                    <% } %>
+
+                    <%# صور المرحلة %>
+                    <% if (stage.photos && stage.photos.length > 0) { %>
+                      <div class="mb-2">
+                        <small class="text-muted fw-semibold d-block mb-1">
+                          📸 صور المرحلة (<%= stage.photos.length %>):
+                        </small>
+                        <div class="stage-photos">
+                          <% stage.photos.forEach(function(photo) { %>
+                            <div class="stage-photo-item"
+                              onclick="openPhoto('<%= photo.filepath %>')">
+                              <img src="<%= photo.filepath %>"
+                                   alt="<%= angleLabels[photo.angle] || photo.angle %>"
+                                   loading="lazy"
+                                   onerror="this.parentNode.style.background='#1a1f36'"/>
+                              <div class="stage-photo-label">
+                                <%= angleLabels[photo.angle] || photo.angle %>
+                              </div>
+                            </div>
+                          <% }) %>
+                        </div>
+                      </div>
+                    <% } %>
+
+                    <%# الموعد التالي %>
+                    <% if (stage.nextVisitDate) { %>
+                      <div class="text-muted small mt-1">
+                        📅 الموعد التالي:
+                        <strong>
+                          <%= new Date(stage.nextVisitDate).toLocaleDateString('ar-IQ',{day:'numeric',month:'long',year:'numeric'}) %>
+                        </strong>
+                      </div>
+                    <% } %>
+
+                  </div>
+                </div>
+              </div>
+              <% }) %>
+            </div>
+
+          <% } %>
+
+        </div>
+      </div>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<%# Lightbox %>
+<div id="photoLightbox" onclick="closeLightbox(event)"
+     style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.9);
+            z-index:9999; display:none; align-items:center;
+            justify-content:center; flex-direction:column;">
+  <img id="lightboxImg" src="" style="max-width:90vw;max-height:80vh;object-fit:contain;border-radius:8px;"/>
+  <button onclick="document.getElementById('photoLightbox').style.display='none';"
+    style="margin-top:16px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.2);
+           color:#fff; padding:8px 20px; border-radius:10px; cursor:pointer; font-family:inherit;">
+    ✕ إغلاق
+  </button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
+<script>
+function openPhoto(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('photoLightbox').style.display = 'flex';
+}
+function closeLightbox(e) {
+  if (e.target.id === 'photoLightbox') {
+    document.getElementById('photoLightbox').style.display = 'none';
+  }
+}
+
+async function updatePlanStatus(id, status, btn) {
+  var res  = await fetch('/treatment-plans/' + id + '/status', {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  var data = await res.json();
+  if (data.success) {
+    document.querySelectorAll('[onclick*="updatePlanStatus"]').forEach(function(b) {
+      b.className = b.className.replace('btn-primary','btn-outline-secondary');
+    });
+    btn.className = btn.className.replace('btn-outline-secondary','btn-primary');
+    alert('✅ ' + data.message);
+  } else {
+    alert('❌ ' + data.message);
+  }
+}
+
+async function deleteStage(planId, stageId) {
+  if (!confirm('هل أنت متأكد من حذف هذه المرحلة؟')) return;
+  var res  = await fetch('/treatment-plans/' + planId + '/stages/' + stageId, {
+    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+  });
+  var data = await res.json();
+  if (data.success) {
+    var el = document.getElementById('stage-' + stageId);
+    if (el) { el.style.opacity = '0'; el.style.transition = '.3s'; setTimeout(function() { el.remove(); }, 300); }
+  } else {
+    alert('❌ ' + data.message);
+  }
+}
+</script>
+</body>
+</html>

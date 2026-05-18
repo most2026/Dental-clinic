@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    #patientResults {
+      position:absolute; top:100%; right:0; left:0; background:#fff;
+      border:1.5px solid #e2e8f0; border-radius:10px;
+      box-shadow:0 8px 24px rgba(0,0,0,.1); z-index:100;
+      max-height:260px; overflow-y:auto; display:none;
+    }
+    .patient-result-item {
+      padding:10px 14px; cursor:pointer; border-bottom:1px solid #f0f2f7; transition:background .15s;
+    }
+    .patient-result-item:hover { background:#e8f0fe; }
+    .section-aligner, .section-braces { display:none; }
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('../partials/sidebar') %>
+  <div class="main-content">
+    <%- include('../partials/navbar') %>
+    <main class="page-content">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">📋 خطة علاج جديدة</h1>
+          <p class="page-subtitle">أنشئ خطة علاج متكاملة وتتبّع مراحلها</p>
+        </div>
+        <a href="/treatment-plans" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-right me-1"></i> العودة
+        </a>
+      </div>
+
+      <% if (errors && errors.length > 0) { %>
+        <div class="flash-alert alert alert-danger alert-dismissible">
+          ❌ <%= errors[0] %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } %>
+
+      <form method="POST" action="/treatment-plans" data-loading="true" novalidate>
+
+        <div class="row g-4">
+          <div class="col-12 col-lg-8">
+
+            <%# اختيار المريض %>
+            <div class="app-card mb-4">
+              <div class="app-card-header">
+                <h2 class="app-card-title">👤 المريض</h2>
+              </div>
+              <div class="app-card-body">
+                <input type="hidden" name="patientId" id="patientId"
+                  value="<%= preselectedPatient?._id || '' %>" required/>
+
+                <% if (preselectedPatient) { %>
+                  <div class="d-flex align-items-center gap-3 p-3 rounded-3"
+                       style="background:#e8f0fe; border:1.5px solid #0d6efd44;">
+                    <div class="patient-avatar" style="width:44px;height:44px;font-size:18px;">
+                      <%= preselectedPatient.firstName.charAt(0) %>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="fw-bold"><%= preselectedPatient.firstName %> <%= preselectedPatient.lastName %></div>
+                      <small class="text-muted"><%= preselectedPatient.patientCode %> • <%= preselectedPatient.phone %></small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                      onclick="document.getElementById('patientId').value='';
+                               document.getElementById('patientSearchArea').style.display='block';
+                               this.closest('.d-flex').style.display='none';">
+                      تغيير
+                    </button>
+                  </div>
+                  <div id="patientSearchArea" style="display:none;">
+                <% } else { %>
+                  <div id="patientSearchArea">
+                <% } %>
+                    <div class="position-relative">
+                      <input type="text" id="patientSearch" class="form-control"
+                        placeholder="🔍 ابحث عن المريض..." autocomplete="off"/>
+                      <div id="patientResults"></div>
+                    </div>
+                  </div>
+              </div>
+            </div>
+
+            <%# تفاصيل الخطة %>
+            <div class="app-card mb-4">
+              <div class="app-card-header">
+                <h2 class="app-card-title">📋 تفاصيل الخطة</h2>
+              </div>
+              <div class="app-card-body">
+                <div class="row g-3">
+
+                  <div class="col-12">
+                    <label class="form-label fw-semibold">عنوان الخطة <span class="text-danger">*</span></label>
+                    <input type="text" name="title" class="form-control"
+                      value="<%= plan.title || '' %>"
+                      placeholder="مثال: علاج تقويم شفاف — 2024" required/>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">فئة العلاج <span class="text-danger">*</span></label>
+                    <select name="category" id="categorySelect" class="form-select"
+                      required onchange="handleCategoryChange(this.value)">
+                      <option value="">اختر الفئة</option>
+                      <% Object.entries(categoryLabels).forEach(function([val,label]) { %>
+                        <option value="<%= val %>"
+                          <%= plan.category===val?'selected':'' %>><%= label %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </div>
+
+                  <%# نوع التقويم (يظهر فقط عند اختيار orthodontic) %>
+                  <div class="col-md-6" id="orthodonticTypeGroup" style="display:none;">
+                    <label class="form-label fw-semibold">نوع التقويم <span class="text-danger">*</span></label>
+                    <select name="orthodonticType" id="orthodonticTypeSelect"
+                      class="form-select" onchange="handleOrthoTypeChange(this.value)">
+                      <option value="">اختر النوع</option>
+                      <% Object.entries(orthodonticLabels).forEach(function([val,label]) { %>
+                        <option value="<%= val %>"
+                          <%= plan.orthodonticType===val?'selected':'' %>><%= label %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">تاريخ البدء <span class="text-danger">*</span></label>
+                    <input type="date" name="startDate" class="form-control"
+                      value="<%= plan.startDate || new Date().toISOString().split('T')[0] %>"
+                      required/>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">تاريخ الانتهاء المتوقع</label>
+                    <input type="date" name="estimatedEndDate" class="form-control"
+                      value="<%= plan.estimatedEndDate || '' %>"/>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">التكلفة الإجمالية</label>
+                    <input type="number" name="totalCost" class="form-control"
+                      value="<%= plan.totalCost || '' %>" min="0" step="500"
+                      placeholder="0" dir="ltr"/>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">العملة</label>
+                    <select name="currency" class="form-select">
+                      <option value="IQD">دينار عراقي (IQD)</option>
+                      <option value="USD">دولار أمريكي (USD)</option>
+                      <option value="SAR">ريال سعودي (SAR)</option>
+                    </select>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <%# ── قسم التقويم الشفاف ────────────────────── %>
+            <div class="app-card mb-4 section-aligner" id="sectionAligner">
+              <div class="app-card-header"
+                   style="background:linear-gradient(135deg,#e0f2fe,#bae6fd);">
+                <h2 class="app-card-title">😁 إعدادات التقويم الشفاف</h2>
+                <span class="badge" style="background:#0369a1; color:#fff;">Aligners</span>
+              </div>
+              <div class="app-card-body">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">إجمالي عدد الأطقم</label>
+                    <input type="number" name="totalAlignersTrays" class="form-control"
+                      value="<%= plan.totalAlignersTrays || '' %>"
+                      min="1" placeholder="مثال: 30" dir="ltr"/>
+                    <div class="form-text">عدد الأطقم الإجمالي في الخطة</div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">الماركة / الشركة</label>
+                    <select name="alignerBrand" class="form-select">
+                      <option value="">غير محدد</option>
+                      <option value="invisalign">Invisalign</option>
+                      <option value="spark">Spark</option>
+                      <option value="suresmile">SureSmile</option>
+                      <option value="angelalign">AngelAlign</option>
+                      <option value="local">محلي</option>
+                      <option value="other">أخرى</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">مدة كل طقم (أيام)</label>
+                    <input type="number" name="trayDuration" class="form-control"
+                      placeholder="7 أو 14" min="1" max="30" dir="ltr"/>
+                  </div>
+                </div>
+                <div class="alert alert-info mt-3 mb-0 py-2" style="font-size:13px; border-radius:10px;">
+                  💡 يمكنك تتبع كل طقم بشكل دقيق عند إضافة مراحل الزيارة
+                </div>
+              </div>
+            </div>
+
+            <%# ── قسم التقويم المعدني/الخزفي ──────────────── %>
+            <div class="app-card mb-4 section-braces" id="sectionBraces">
+              <div class="app-card-header"
+                   style="background:linear-gradient(135deg,#f3f4f6,#e5e7eb);">
+                <h2 class="app-card-title">🔩 إعدادات التقويم المعدني/الخزفي</h2>
+              </div>
+              <div class="app-card-body">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">نظام البراكيت</label>
+                    <input type="text" name="bracketSystem" class="form-control"
+                      value="<%= plan.bracketSystem || '' %>"
+                      placeholder="مثال: MBT، Damon، Roth"/>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">ماركة البراكيت</label>
+                    <input type="text" name="bracketBrand" class="form-control"
+                      value="<%= plan.bracketBrand || '' %>"
+                      placeholder="مثال: 3M، Ormco، GAC"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <%# أهداف العلاج وملاحظات %>
+            <div class="app-card mb-4">
+              <div class="app-card-header">
+                <h2 class="app-card-title">🎯 أهداف العلاج</h2>
+              </div>
+              <div class="app-card-body">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label fw-semibold">أهداف الخطة العلاجية</label>
+                    <textarea name="treatmentGoals" class="form-control" rows="3"
+                      placeholder="تصحيح الإطباق، إغلاق الفراغات، تقويم الأسنان..."><%= plan.treatmentGoals || '' %></textarea>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label fw-semibold">ملاحظات عامة</label>
+                    <textarea name="generalNotes" class="form-control" rows="2"
+                      placeholder="أي معلومات إضافية عن الحالة..."><%= plan.generalNotes || '' %></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <%# الشريط الجانبي %>
+          <div class="col-12 col-lg-4">
+            <div class="app-card" style="position:sticky; top:80px;">
+              <div class="app-card-header">
+                <h2 class="app-card-title">📌 ملخص</h2>
+              </div>
+              <div class="app-card-body">
+                <div class="alert alert-primary py-2 small mb-3" style="border-radius:10px;">
+                  <strong>بعد إنشاء الخطة:</strong><br/>
+                  ستتمكن من إضافة مراحل الزيارة وتتبع التقدم خطوة بخطوة 📊
+                </div>
+                <ul class="list-unstyled small text-muted mb-0">
+                  <li class="mb-2">✅ تتبع كل زيارة بالتفاصيل</li>
+                  <li class="mb-2">📸 رفع صور المقارنة لكل مرحلة</li>
+                  <li class="mb-2">😁 متابعة تقدم الأطقم (للتقويم الشفاف)</li>
+                  <li class="mb-2">🔩 تسجيل تغييرات الأسلاك (للتقويم المعدني)</li>
+                  <li class="mb-2">📈 مخطط تقدم بصري احترافي</li>
+                </ul>
+              </div>
+              <div class="app-card-body border-top">
+                <button type="submit" class="btn btn-primary w-100 py-2">
+                  <i class="bi bi-plus-circle-fill me-1"></i> إنشاء الخطة
+                </button>
+                <a href="/treatment-plans" class="btn btn-outline-secondary w-100 mt-2">إلغاء</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </form>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
+<script>
+// ── بحث المريض ───────────────────────────────────────────────
+var searchTimer = null;
+document.getElementById('patientSearch')?.addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  var q = this.value.trim();
+  var box = document.getElementById('patientResults');
+  if (q.length < 2) { box.style.display='none'; return; }
+  searchTimer = setTimeout(async () => {
+    var res  = await fetch('/patients/search?q=' + encodeURIComponent(q));
+    var data = await res.json();
+    if (!data.data?.length) {
+      box.innerHTML = '<div class="patient-result-item text-muted small">لا توجد نتائج</div>';
+    } else {
+      box.innerHTML = data.data.map(p => `
+        <div class="patient-result-item"
+          onclick="selectPatient('${p.id}','${p.name}','${p.code}','${p.phone}')">
+          <div class="d-flex align-items-center gap-2">
+            <div class="patient-avatar" style="width:28px;height:28px;font-size:11px;">
+              ${p.name.charAt(0)}
+            </div>
+            <div>
+              <div class="fw-semibold small">${p.name}</div>
+              <div class="text-muted" style="font-size:11px;">${p.code} • ${p.phone}</div>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+    box.style.display = 'block';
+  }, 300);
+});
+
+function selectPatient(id, name, code, phone) {
+  document.getElementById('patientId').value = id;
+  var box = document.getElementById('patientResults');
+  if (box) box.style.display = 'none';
+  var input = document.getElementById('patientSearch');
+  if (input) {
+    input.value = name + ' — ' + code;
+    input.readOnly = true;
+  }
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#patientSearch') && !e.target.closest('#patientResults')) {
+    var box = document.getElementById('patientResults');
+    if (box) box.style.display = 'none';
+  }
+});
+
+// ── التحكم في الأقسام الديناميكية ───────────────────────────
+function handleCategoryChange(val) {
+  var orthoGroup = document.getElementById('orthodonticTypeGroup');
+  orthoGroup.style.display = val === 'orthodontic' ? 'block' : 'none';
+
+  // إخفاء أقسام التقويم عند تغيير الفئة
+  document.getElementById('sectionAligner').style.display = 'none';
+  document.getElementById('sectionBraces').style.display  = 'none';
+}
+
+function handleOrthoTypeChange(val) {
+  var sectionAligner = document.getElementById('sectionAligner');
+  var sectionBraces  = document.getElementById('sectionBraces');
+  sectionAligner.style.display = val === 'clear_aligner' ? 'block' : 'none';
+  sectionBraces.style.display  = (val === 'metal' || val === 'ceramic' || val === 'lingual')
+                                  ? 'block' : 'none';
+}
+
+// تفعيل عند التحميل إذا كانت القيم موجودة
+(function init() {
+  var cat  = document.getElementById('categorySelect');
+  var orth = document.getElementById('orthodonticTypeSelect');
+  if (cat?.value)  handleCategoryChange(cat.value);
+  if (orth?.value) handleOrthoTypeChange(orth.value);
+})();
+</script>
+</body>
+</html>

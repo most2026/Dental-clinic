@@ -37,7 +37,11 @@
       <span class="sidebar-link-icon">➕</span>
       مريض جديد
     </a>
-
+    <a href="/treatment-plans"
+       class="sidebar-link <%= currentPath.startsWith('/treatment-plans') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">📋</span>
+       خطط العلاج والتقويم
+     </a>
     <p class="sidebar-section-title">المواعيد</p>
 
     <a href="/appointments"
