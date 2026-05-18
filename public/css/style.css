@@ -61,19 +61,21 @@ html, body {
 /* ============================================================
    الشريط الجانبي (Sidebar)
    ============================================================ */
+
 .sidebar {
   width: var(--sidebar-width);
   min-height: 100vh;
+  height: 100vh;              /* ← مهم: ارتفاع ثابت */
   background: var(--sidebar-bg);
   display: flex;
-  flex-direction: column;
+  flex-direction: column;     /* ← العناصر تحت بعض */
   position: fixed;
   top: 0;
-  right: 0;           /* RTL: الجانب الأيمن */
+  right: 0;
   z-index: 1040;
   transition: var(--transition);
   box-shadow: -3px 0 20px rgba(0,0,0,0.15);
-  overflow-x: hidden;
+  overflow: hidden;           /* ← يمنع تمرير الـ sidebar كلها */
 }
 
 /* شعار العيادة في أعلى الـ Sidebar */
