@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    /* ── لوحة المقارنة ──────────────────────────────────────── */
+    .compare-wrapper {
+      position: relative; border-radius: 16px; overflow: hidden;
+      background: #0f1117; aspect-ratio: 4/3;
+      box-shadow: 0 8px 32px rgba(0,0,0,.3);
+      user-select: none;
+    }
+
+    .compare-side {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .compare-side img {
+      width: 100%; height: 100%; object-fit: contain;
+      filter: brightness(1.05) contrast(1.05);
+    }
+
+    /* الجانب الأيمن (قبل) — يُقلَّص بالـ clip */
+    .compare-before { z-index: 1; }
+    .compare-after  { z-index: 2; clip-path: inset(0 50% 0 0); transition: clip-path .0s; }
+
+    /* خط الفصل */
+    .compare-divider {
+      position: absolute; top: 0; bottom: 0; z-index: 3;
+      width: 3px; background: #fff;
+      box-shadow: 0 0 12px rgba(255,255,255,.6);
+      cursor: ew-resize; left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .compare-handle {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px; height: 44px; border-radius: 50%;
+      background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.4);
+      display: flex; align-items: center; justify-content: center;
+      cursor: ew-resize; font-size: 18px; color: #1a1f36;
+      font-weight: 900; line-height: 1;
+    }
+
+    /* تسميات قبل/بعد */
+    .compare-label {
+      position: absolute; top: 14px; z-index: 10;
+      padding: 5px 14px; border-radius: 20px; font-size: 13px;
+      font-weight: 700; backdrop-filter: blur(6px);
+    }
+    .label-before {
+      right: 14px; background: rgba(220,53,69,.8); color: #fff;
+    }
+    .label-after {
+      left: 14px; background: rgba(25,135,84,.8); color: #fff;
+    }
+
+    /* ── اختيار الصور ───────────────────────────────────────── */
+    .angle-selector { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .angle-btn {
+      padding: 5px 12px; border-radius: 8px; font-size: 12px;
+      border: 1.5px solid #e2e8f0; background: #f8f9fc; cursor: pointer;
+      transition: all .15s; font-weight: 600; color: #64748b;
+    }
+    .angle-btn.active {
+      background: #0d6efd; color: #fff; border-color: #0d6efd;
+    }
+
+    /* ── بطاقة المرحلة ──────────────────────────────────────── */
+    .stage-selector-card {
+      border-radius: 12px; border: 2px solid #eef0f5;
+      padding: 14px; cursor: pointer; transition: all .2s;
+      background: #fff;
+    }
+    .stage-selector-card:hover    { border-color: #0d6efd44; }
+    .stage-selector-card.selected { border-color: #0d6efd; background: #e8f0fe; }
+    .stage-mini-photo {
+      width: 52px; height: 52px; border-radius: 8px; overflow: hidden;
+      background: #0f1117; flex-shrink: 0;
+    }
+    .stage-mini-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ── إحصائيات المقارنة ──────────────────────────────────── */
+    .stat-compare-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid #f0f2f7;
+    }
+    .stat-compare-row:last-child { border-bottom: none; }
+    .stat-bar-wrap { flex: 1; height: 6px; border-radius: 10px; background: #f0f2f7; overflow: hidden; }
+    .stat-bar-fill { height: 100%; border-radius: 10px; transition: width .6s ease; }
+
+    /* ── الصورة الكاملة ─────────────────────────────────────── */
+    #fullscreenView {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.95); z-index: 9999;
+      align-items: center; justify-content: center;
+    }
+    #fullscreenView.active { display: flex; }
+    #fullscreenView img {
+      max-width: 92vw; max-height: 88vh; object-fit: contain; border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('../partials/sidebar') %>
+  <div class="main-content">
+    <%- include('../partials/navbar') %>
+    <main class="page-content">
+
+      <%# رأس الصفحة %>
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">🔀 مقارنة قبل / بعد</h1>
+          <p class="page-subtitle">
+            <%= plan.title %> —
+            <strong><%= plan.patient.firstName %> <%= plan.patient.lastName %></strong>
+          </p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="/treatment-plans/<%= plan._id %>" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-right me-1"></i> العودة للخطة
+          </a>
+        </div>
+      </div>
+
+      <% if (stagesWithPhotos.length < 2) { %>
+        <%# لا توجد مراحل كافية %>
+        <div class="app-card">
+          <div class="app-card-body text-center py-5 text-muted">
+            <div style="font-size:4rem; margin-bottom:16px;">📸</div>
+            <h4>تحتاج إلى مرحلتين على الأقل تحتويان على صور</h4>
+            <p class="small">
+              حالياً يوجد <strong><%= stagesWithPhotos.length %></strong>
+              مرحلة تحتوي على صور.
+              أضف صوراً لمراحل أكثر لتتمكن من المقارنة.
+            </p>
+            <a href="/treatment-plans/<%= plan._id %>/stages/add"
+               class="btn btn-success btn-sm">
+              <i class="bi bi-plus-circle me-1"></i> إضافة مرحلة بصور
+            </a>
+          </div>
+        </div>
+      <% } else { %>
+
+      <div class="row g-4">
+
+        <%# العمود الأيسر: الـ Slider %>
+        <div class="col-12 col-xl-7">
+
+          <%# اختيار زاوية الصورة %>
+          <div class="app-card mb-3">
+            <div class="app-card-body d-flex align-items-center gap-3 flex-wrap">
+              <span class="fw-semibold small text-muted">زاوية الصورة:</span>
+              <div class="angle-selector" id="angleSelector">
+                <%
+                  var ANGLES = {
+                    front:'🎯 أمامي', left:'◀ جانبي أيسر', right:'▶ جانبي أيمن',
+                    upper:'⬆ علوي', lower:'⬇ سفلي', smile:'😁 ابتسامة',
+                    xray:'🩻 أشعة', other:'📷 أخرى'
+                  };
+                %>
+                <% Object.entries(ANGLES).forEach(function([key, label]) { %>
+                  <button type="button"
+                    class="angle-btn <%= key === 'front' ? 'active' : '' %>"
+                    onclick="selectAngle('<%= key %>', this)">
+                    <%= label %>
+                  </button>
+                <% }) %>
+              </div>
+            </div>
+          </div>
+
+          <%# لوحة المقارنة التفاعلية %>
+          <div class="compare-wrapper" id="compareWrapper">
+
+            <%# قبل (يمين) %>
+            <div class="compare-side compare-before">
+              <img id="beforeImg"
+                src="<%= beforeStage?.photos?.[0]?.filepath || '' %>"
+                alt="قبل"
+                onerror="this.style.display='none'"/>
+              <div id="beforeEmpty" style="color:rgba(255,255,255,.3);text-align:center;
+                display:<%= beforeStage?.photos?.length ? 'none' : 'flex' %>;
+                flex-direction:column;align-items:center;gap:8px;">
+                <div style="font-size:3rem;">📷</div>
+                <p class="small">لا توجد صورة للمرحلة المحددة</p>
+              </div>
+            </div>
+
+            <%# بعد (يسار) %>
+            <div class="compare-side compare-after" id="compareAfter">
+              <img id="afterImg"
+                src="<%= afterStage?.photos?.[0]?.filepath || '' %>"
+                alt="بعد"
+                onerror="this.style.display='none'"/>
+              <div id="afterEmpty" style="color:rgba(255,255,255,.3);text-align:center;
+                display:<%= afterStage?.photos?.length ? 'none' : 'flex' %>;
+                flex-direction:column;align-items:center;gap:8px;">
+                <div style="font-size:3rem;">📷</div>
+                <p class="small">لا توجد صورة للمرحلة المحددة</p>
+              </div>
+            </div>
+
+            <%# خط الفصل %>
+            <div class="compare-divider" id="compareDivider">
+              <div class="compare-handle">⇔</div>
+            </div>
+
+            <%# تسميات %>
+            <div class="compare-label label-before">قبل — مرحلة <%= beforeStage?.stageNumber || '?' %></div>
+            <div class="compare-label label-after" id="afterLabel">
+              بعد — مرحلة <%= afterStage?.stageNumber || '?' %>
+            </div>
+
+          </div>
+
+          <%# أدوات الصورة %>
+          <div class="d-flex gap-2 mt-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary" onclick="adjustFilter('brightness',10)">
+              🔆 إضاءة+
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="adjustFilter('brightness',-10)">
+              🔅 إضاءة-
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="adjustFilter('contrast',10)">
+              ◑ تباين+
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="toggleInvert()">
+              ⬛ عكس الألوان
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="resetFilters()">
+              ↺ إعادة تعيين
+            </button>
+            <button class="btn btn-sm btn-outline-primary" onclick="openFullscreen()">
+              🔍 ملء الشاشة
+            </button>
+          </div>
+
+        </div>
+
+        <%# العمود الأيمن: اختيار المراحل والإحصائيات %>
+        <div class="col-12 col-xl-5">
+
+          <%# اختيار مرحلة "قبل" %>
+          <div class="app-card mb-3">
+            <div class="app-card-header" style="background:#fee2e2;">
+              <h2 class="app-card-title" style="color:#991b1b;">🔴 مرحلة "قبل"</h2>
+            </div>
+            <div class="app-card-body" style="max-height:220px; overflow-y:auto;">
+              <% stagesWithPhotos.forEach(function(stage) { %>
+                <div class="stage-selector-card mb-2 d-flex align-items-center gap-3
+                     <%= beforeId === stage._id.toString() ? 'selected' : '' %>"
+                     onclick="selectStage('before', '<%= stage._id %>',
+                       <%= JSON.stringify(stage.photos) %>, '<%= stage.stageNumber %>')">
+                  <div class="stage-mini-photo">
+                    <img src="<%= stage.photos[0]?.filepath %>"
+                         alt="" onerror="this.parentNode.style.background='#1a1f36'"/>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold small">مرحلة <%= stage.stageNumber %></div>
+                    <div class="text-muted" style="font-size:11px;">
+                      <%= new Date(stage.visitDate).toLocaleDateString('ar-IQ',{day:'numeric',month:'short',year:'numeric'}) %>
+                    </div>
+                    <div class="text-muted" style="font-size:11px;">
+                      <%= stage.photos.length %> صورة
+                    </div>
+                  </div>
+                  <% if (beforeId === stage._id.toString()) { %>
+                    <span style="color:#dc3545; font-size:18px;">🔴</span>
+                  <% } %>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+
+          <%# اختيار مرحلة "بعد" %>
+          <div class="app-card mb-3">
+            <div class="app-card-header" style="background:#dcfce7;">
+              <h2 class="app-card-title" style="color:#166534;">🟢 مرحلة "بعد"</h2>
+            </div>
+            <div class="app-card-body" style="max-height:220px; overflow-y:auto;">
+              <% stagesWithPhotos.forEach(function(stage) { %>
+                <div class="stage-selector-card mb-2 d-flex align-items-center gap-3
+                     <%= afterId === stage._id.toString() ? 'selected' : '' %>"
+                     onclick="selectStage('after', '<%= stage._id %>',
+                       <%= JSON.stringify(stage.photos) %>, '<%= stage.stageNumber %>')">
+                  <div class="stage-mini-photo">
+                    <img src="<%= stage.photos[0]?.filepath %>"
+                         alt="" onerror="this.parentNode.style.background='#1a1f36'"/>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold small">مرحلة <%= stage.stageNumber %></div>
+                    <div class="text-muted" style="font-size:11px;">
+                      <%= new Date(stage.visitDate).toLocaleDateString('ar-IQ',{day:'numeric',month:'short',year:'numeric'}) %>
+                    </div>
+                    <div class="text-muted" style="font-size:11px;">
+                      <%= stage.photos.length %> صورة
+                    </div>
+                  </div>
+                  <% if (afterId === stage._id.toString()) { %>
+                    <span style="color:#16a34a; font-size:18px;">🟢</span>
+                  <% } %>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+
+          <%# إحصائيات المقارنة %>
+          <% if (beforeStage && afterStage) { %>
+          <div class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">📊 مقارنة الإحصائيات</h2>
+            </div>
+            <div class="app-card-body">
+
+              <%# مستوى الألم %>
+              <div class="stat-compare-row">
+                <div style="min-width:90px; font-size:12px; font-weight:600; color:#64748b;">😣 الألم</div>
+                <div style="min-width:28px; font-size:13px; font-weight:700; color:#dc2626;">
+                  <%= beforeStage.painLevel %>/10
+                </div>
+                <div class="stat-bar-wrap">
+                  <div class="stat-bar-fill"
+                       style="width:<%= beforeStage.painLevel*10 %>%;
+                              background:linear-gradient(90deg,#fca5a5,#dc2626);">
+                  </div>
+                </div>
+                <div style="font-size:10px; color:#64748b;">←</div>
+                <div class="stat-bar-wrap">
+                  <div class="stat-bar-fill"
+                       style="width:<%= afterStage.painLevel*10 %>%;
+                              background:linear-gradient(90deg,#16a34a,#4ade80);">
+                  </div>
+                </div>
+                <div style="min-width:28px; font-size:13px; font-weight:700; color:#16a34a;">
+                  <%= afterStage.painLevel %>/10
+                </div>
+              </div>
+
+              <%# الالتزام %>
+              <% if (plan.orthodonticType === 'clear_aligner') { %>
+              <div class="stat-compare-row">
+                <div style="min-width:90px; font-size:12px; font-weight:600; color:#64748b;">✅ الالتزام</div>
+                <div style="min-width:28px; font-size:13px; font-weight:700; color:#0369a1;">
+                  <%= beforeStage.compliance %>%
+                </div>
+                <div class="stat-bar-wrap">
+                  <div class="stat-bar-fill"
+                       style="width:<%= beforeStage.compliance %>%; background:#0ea5e9;">
+                  </div>
+                </div>
+                <div style="font-size:10px; color:#64748b;">←</div>
+                <div class="stat-bar-wrap">
+                  <div class="stat-bar-fill"
+                       style="width:<%= afterStage.compliance %>%; background:#16a34a;">
+                  </div>
+                </div>
+                <div style="min-width:28px; font-size:13px; font-weight:700; color:#16a34a;">
+                  <%= afterStage.compliance %>%
+                </div>
+              </div>
+
+              <%# الطقم %>
+              <% if (beforeStage.alignerTrayEnd && afterStage.alignerTrayEnd) { %>
+              <div class="stat-compare-row">
+                <div style="min-width:90px; font-size:12px; font-weight:600; color:#64748b;">😁 الطقم</div>
+                <div style="min-width:28px; font-size:13px; font-weight:700; color:#0369a1;">
+                  #<%= beforeStage.alignerTrayEnd %>
+                </div>
+                <div style="flex:1; text-align:center; font-size:16px;">➡️</div>
+                <div style="min-width:28px; font-size:13px; font-weight:700; color:#16a34a;">
+                  #<%= afterStage.alignerTrayEnd %>
+                </div>
+              </div>
+              <% } %>
+              <% } %>
+
+              <%# الفترة الزمنية %>
+              <%
+                var diffMs   = new Date(afterStage.visitDate) - new Date(beforeStage.visitDate);
+                var diffDays = Math.round(diffMs / (1000*60*60*24));
+                var diffMonths = Math.round(diffDays / 30);
+              %>
+              <div class="mt-3 p-2 rounded-3 text-center"
+                   style="background:#f8f9fc; border:1px solid #eef0f5;">
+                <div class="text-muted small">الفترة بين المرحلتين</div>
+                <div class="fw-bold text-primary fs-5">
+                  <%= diffMonths > 0 ? diffMonths + ' شهر' : diffDays + ' يوم' %>
+                </div>
+                <div class="text-muted" style="font-size:11px;">
+                  (<%= diffDays %> يوم)
+                </div>
+              </div>
+
+              <%# ملاحظات الطبيب %>
+              <% if (beforeStage.doctorNotes || afterStage.doctorNotes) { %>
+              <div class="row g-2 mt-2">
+                <% if (beforeStage.doctorNotes) { %>
+                <div class="col-6">
+                  <div style="font-size:11px; font-weight:600; color:#dc3545; margin-bottom:4px;">
+                    ملاحظات قبل:
+                  </div>
+                  <p style="font-size:11px; color:#64748b; margin:0;
+                     border-right:2px solid #dc3545; padding-right:6px;">
+                    <%= beforeStage.doctorNotes.substring(0,100) %><%= beforeStage.doctorNotes.length>100?'...':'' %>
+                  </p>
+                </div>
+                <% } %>
+                <% if (afterStage.doctorNotes) { %>
+                <div class="col-6">
+                  <div style="font-size:11px; font-weight:600; color:#16a34a; margin-bottom:4px;">
+                    ملاحظات بعد:
+                  </div>
+                  <p style="font-size:11px; color:#64748b; margin:0;
+                     border-right:2px solid #16a34a; padding-right:6px;">
+                    <%= afterStage.doctorNotes.substring(0,100) %><%= afterStage.doctorNotes.length>100?'...':'' %>
+                  </p>
+                </div>
+                <% } %>
+              </div>
+              <% } %>
+
+            </div>
+          </div>
+          <% } %>
+
+        </div>
+      </div>
+
+      <% } %>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<%# Fullscreen View %>
+<div id="fullscreenView" onclick="closeFullscreen()">
+  <img id="fullscreenImg" src="" alt=""/>
+  <button onclick="closeFullscreen()"
+    style="position:absolute;top:16px;left:16px;background:rgba(255,255,255,.15);
+           border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 18px;
+           border-radius:10px;cursor:pointer;font-family:inherit;font-size:14px;">
+    ✕ إغلاق
+  </button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
+<script>
+// ── بيانات المراحل ───────────────────────────────────────────
+var stagePhotos = {};
+<% stagesWithPhotos.forEach(function(s) { %>
+stagePhotos['<%= s._id %>'] = <%- JSON.stringify(s.photos) %>;
+<% }) %>
+
+var currentAngle    = 'front';
+var currentBeforeId = '<%= beforeId %>';
+var currentAfterId  = '<%= afterId %>';
+var brightness = 100, contrast = 100, isInverted = false;
+
+// ── Slider التفاعلي ──────────────────────────────────────────
+var wrapper  = document.getElementById('compareWrapper');
+var divider  = document.getElementById('compareDivider');
+var afterEl  = document.getElementById('compareAfter');
+var isDragging = false;
+
+divider?.addEventListener('mousedown', function(e) {
+  isDragging = true; e.preventDefault();
+});
+wrapper?.addEventListener('mousemove', function(e) {
+  if (!isDragging) return;
+  var rect = wrapper.getBoundingClientRect();
+  var x    = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+  var pct  = (x / rect.width) * 100;
+  divider.style.left = pct + '%';
+  afterEl.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+});
+document.addEventListener('mouseup', function() { isDragging = false; });
+
+// touch support
+divider?.addEventListener('touchstart', function(e) { isDragging = true; }, {passive:true});
+wrapper?.addEventListener('touchmove', function(e) {
+  if (!isDragging) return;
+  var rect = wrapper.getBoundingClientRect();
+  var touch = e.touches[0];
+  var x = Math.max(0, Math.min(touch.clientX - rect.left, rect.width));
+  var pct = (x / rect.width) * 100;
+  divider.style.left = pct + '%';
+  afterEl.style.clipPath = 'inset(0 ' + (100-pct) + '% 0 0)';
+}, {passive:true});
+document.addEventListener('touchend', function() { isDragging = false; });
+
+// ── اختيار الزاوية ───────────────────────────────────────────
+function selectAngle(angle, btn) {
+  currentAngle = angle;
+  document.querySelectorAll('.angle-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  updateImages();
+}
+
+// ── اختيار مرحلة ─────────────────────────────────────────────
+function selectStage(side, stageId, photos, stageNum) {
+  if (side === 'before') {
+    currentBeforeId = stageId;
+    document.querySelectorAll('.stage-selector-card').forEach(function(c) {
+      if (c.parentNode.previousElementSibling?.textContent?.includes('قبل')) {
+        c.classList.remove('selected');
+      }
+    });
+  } else {
+    currentAfterId = stageId;
+    document.getElementById('afterLabel').textContent = 'بعد — مرحلة ' + stageNum;
+  }
+
+  // تحديث حالة البطاقات
+  document.querySelectorAll('.stage-selector-card').forEach(function(card) {
+    card.classList.remove('selected');
+  });
+
+  updateImages();
+
+  // إعادة تحميل الصفحة مع المعاملات
+  var url = new URL(window.location);
+  url.searchParams.set(side === 'before' ? 'before' : 'after', stageId);
+  window.history.pushState({}, '', url);
+}
+
+// ── تحديث الصور ──────────────────────────────────────────────
+function updateImages() {
+  setPhoto('before', currentBeforeId);
+  setPhoto('after',  currentAfterId);
+}
+
+function setPhoto(side, stageId) {
+  var photos = stagePhotos[stageId] || [];
+  var photo  = photos.find(function(p) { return p.angle === currentAngle; })
+              || photos[0]
+              || null;
+
+  var imgEl   = document.getElementById(side + 'Img');
+  var emptyEl = document.getElementById(side + 'Empty');
+
+  if (photo && imgEl) {
+    imgEl.src = photo.filepath;
+    imgEl.style.display = 'block';
+    if (emptyEl) emptyEl.style.display = 'none';
+  } else {
+    if (imgEl)   imgEl.style.display   = 'none';
+    if (emptyEl) emptyEl.style.display = 'flex';
+  }
+  applyFilters();
+}
+
+// ── أدوات الصورة ─────────────────────────────────────────────
+function applyFilters() {
+  var f = 'brightness(' + brightness + '%) contrast(' + contrast + '%)' +
+          (isInverted ? ' invert(100%)' : '');
+  ['beforeImg','afterImg'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.filter = f;
+  });
+}
+
+function adjustFilter(type, delta) {
+  if (type === 'brightness') brightness = Math.max(20, Math.min(250, brightness + delta));
+  if (type === 'contrast')   contrast   = Math.max(50, Math.min(300, contrast   + delta));
+  applyFilters();
+}
+
+function toggleInvert()  { isInverted = !isInverted; applyFilters(); }
+function resetFilters()  { brightness=100; contrast=100; isInverted=false; applyFilters(); }
+
+// ── ملء الشاشة ───────────────────────────────────────────────
+function openFullscreen() {
+  var src = document.getElementById('afterImg')?.src ||
+            document.getElementById('beforeImg')?.src;
+  if (!src) return;
+  document.getElementById('fullscreenImg').src = src;
+  document.getElementById('fullscreenView').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeFullscreen() {
+  document.getElementById('fullscreenView').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// تهيئة
+updateImages();
+</script>
+</body>
+</html>

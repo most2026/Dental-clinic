@@ -6,10 +6,12 @@
 const express    = require('express');
 const router     = express.Router();
 const { requireAuth } = require('../middlewares/authMiddleware');
+const { injectPermissions, checkPermission } = require('../middlewares/permissions');
 const { getDashboard } = require('../controllers/dashboardController');
 
 // ── تطبيق الحماية على كل المسارات التالية ──────────────────
 router.use(requireAuth);
+router.use(injectPermissions);
 
 // --- الصفحة الرئيسية ---
 router.get('/', getDashboard);

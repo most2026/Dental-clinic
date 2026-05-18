@@ -397,9 +397,45 @@ const deleteStage = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'تم حذف المرحلة بنجاح' });
 });
 
+// ────────────────────────────────────────────────────────────
+// GET /treatment-plans/:id/compare — مقارنة قبل/بعد
+// ────────────────────────────────────────────────────────────
+const compare = asyncHandler(async (req, res) => {
+  const plan = await TreatmentPlan.findById(req.params.id)
+    .populate('patient', 'firstName lastName patientCode');
+
+  if (!plan) {
+    req.session.errorMsg = 'خطة العلاج غير موجودة';
+    return res.redirect('/treatment-plans');
+  }
+
+  // فقط المراحل التي تحتوي على صور
+  const stagesWithPhotos = plan.stages
+    .filter(s => s.photos && s.photos.length > 0)
+    .sort((a, b) => a.stageNumber - b.stageNumber);
+
+  // المرحلة الأولى كـ "قبل" والأخيرة كـ "بعد" افتراضياً
+  const beforeId = req.query.before || stagesWithPhotos[0]?._id?.toString();
+  const afterId  = req.query.after  || stagesWithPhotos[stagesWithPhotos.length - 1]?._id?.toString();
+
+  const beforeStage = plan.stages.id(beforeId) || null;
+  const afterStage  = plan.stages.id(afterId)  || null;
+
+  res.render('treatment-plans/compare', {
+    title:          `مقارنة قبل/بعد — ${plan.title}`,
+    plan,
+    stagesWithPhotos,
+    beforeStage,
+    afterStage,
+    beforeId,
+    afterId,
+    angleLabels:    ANGLE_LABELS,
+    orthodonticLabels: ORTHODONTIC_LABELS,
+  });
+});
 module.exports = {
   index, newForm, create, show,
   addStageForm, addStage,
   updateStatus, deleteStage,
-  CATEGORY_LABELS, ORTHODONTIC_LABELS, STATUS_LABELS,
+  CATEGORY_LABELS, ORTHODONTIC_LABELS, STATUS_LABELS, compare,
 };

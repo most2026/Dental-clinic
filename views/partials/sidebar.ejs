@@ -1,10 +1,5 @@
-<%# ============================================================
-     views/partials/sidebar.ejs — الشريط الجانبي النهائي
-     ============================================================ %>
-
 <aside class="sidebar" id="appSidebar">
 
-  <%# ── الشعار ─────────────────────────────────────────────── %>
   <a href="/" class="sidebar-brand">
     <div class="sidebar-brand-icon">🦷</div>
     <div class="sidebar-brand-text">
@@ -13,182 +8,137 @@
     </div>
   </a>
 
-  <%# ── قائمة التنقل ──────────────────────────────────────── %>
   <nav class="sidebar-nav">
 
     <p class="sidebar-section-title">الرئيسية</p>
-
-    <a href="/"
-       class="sidebar-link <%= currentPath === '/' ? 'active' : '' %>">
-      <span class="sidebar-link-icon">📊</span>
-      لوحة التحكم
+    <a href="/" class="sidebar-link <%= currentPath === '/' ? 'active' : '' %>">
+      <span class="sidebar-link-icon">📊</span> لوحة التحكم
     </a>
 
+    <%# المرضى — جميع الأدوار %>
     <p class="sidebar-section-title">المرضى</p>
-
     <a href="/patients"
-       class="sidebar-link <%= currentPath.startsWith('/patients') && !currentPath.includes('/xrays') ? 'active' : '' %>">
-      <span class="sidebar-link-icon">👥</span>
-      المرضى
+       class="sidebar-link <%= currentPath.startsWith('/patients') && !currentPath.includes('xrays') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">👥</span> المرضى
     </a>
-
+    <% if (locals.can && can('patients','create')) { %>
     <a href="/patients/new"
        class="sidebar-link <%= currentPath === '/patients/new' ? 'active' : '' %>">
-      <span class="sidebar-link-icon">➕</span>
-      مريض جديد
+      <span class="sidebar-link-icon">➕</span> مريض جديد
     </a>
-    <a href="/treatment-plans"
-       class="sidebar-link <%= currentPath.startsWith('/treatment-plans') ? 'active' : '' %>">
-      <span class="sidebar-link-icon">📋</span>
-       خطط العلاج والتقويم
-     </a>
-    <p class="sidebar-section-title">المواعيد</p>
+    <% } %>
 
+    <%# المواعيد — جميع الأدوار %>
+    <p class="sidebar-section-title">المواعيد</p>
     <a href="/appointments"
        class="sidebar-link <%= currentPath === '/appointments' ? 'active' : '' %>">
-      <span class="sidebar-link-icon">📅</span>
-      جميع المواعيد
+      <span class="sidebar-link-icon">📅</span> جميع المواعيد
     </a>
-
     <a href="/appointments/today"
        class="sidebar-link <%= currentPath === '/appointments/today' ? 'active' : '' %>">
-      <span class="sidebar-link-icon">🕐</span>
-      مواعيد اليوم
+      <span class="sidebar-link-icon">🕐</span> مواعيد اليوم
     </a>
-
     <a href="/appointments/new"
        class="sidebar-link <%= currentPath === '/appointments/new' ? 'active' : '' %>">
-      <span class="sidebar-link-icon">📌</span>
-      حجز موعد
+      <span class="sidebar-link-icon">📌</span> حجز موعد
     </a>
 
+    <%# الفواتير — جميع الأدوار %>
     <p class="sidebar-section-title">المالية</p>
-
     <a href="/invoices"
        class="sidebar-link <%= currentPath === '/invoices' ? 'active' : '' %>">
-      <span class="sidebar-link-icon">🧾</span>
-      الفواتير
+      <span class="sidebar-link-icon">🧾</span> الفواتير
     </a>
-
     <a href="/invoices/new"
        class="sidebar-link <%= currentPath === '/invoices/new' ? 'active' : '' %>">
-      <span class="sidebar-link-icon">💰</span>
-      فاتورة جديدة
+      <span class="sidebar-link-icon">💰</span> فاتورة جديدة
     </a>
 
-    <p class="sidebar-section-title">التقارير والإعدادات</p>
-
-    <a href="/reports"
-       class="sidebar-link <%= currentPath.startsWith('/reports') ? 'active' : '' %>">
-      <span class="sidebar-link-icon">📊</span>
-      التقارير
+    <%# خطط العلاج — طبيب وأدمن %>
+    <% if (locals.can && can('treatmentPlans','view')) { %>
+    <p class="sidebar-section-title">العلاج والمتابعة</p>
+    <a href="/treatment-plans"
+       class="sidebar-link <%= currentPath.startsWith('/treatment-plans') ? 'active' : '' %>">
+      <span class="sidebar-link-icon">📋</span> خطط العلاج والتقويم
     </a>
+    <% if (can('treatmentPlans','create')) { %>
+    <a href="/treatment-plans/new"
+       class="sidebar-link <%= currentPath === '/treatment-plans/new' ? 'active' : '' %>">
+      <span class="sidebar-link-icon">🦷</span> خطة علاج جديدة
+    </a>
+    <% } %>
+    <% } %>
 
+    <%# الإعدادات %>
+    <p class="sidebar-section-title">الإعدادات</p>
     <a href="/treatments"
        class="sidebar-link <%= currentPath.startsWith('/treatments') ? 'active' : '' %>">
-      <span class="sidebar-link-icon">🩺</span>
-      كتالوج العلاجات
+      <span class="sidebar-link-icon">🩺</span> كتالوج العلاجات
     </a>
-
+    <% if (locals.can && can('settings','manage')) { %>
     <a href="/settings"
        class="sidebar-link <%= currentPath.startsWith('/settings') ? 'active' : '' %>">
-      <span class="sidebar-link-icon">⚙️</span>
-      الإعدادات
+      <span class="sidebar-link-icon">⚙️</span> الإعدادات
     </a>
+    <% } %>
 
   </nav>
 
-  <%# ── أسفل الـ Sidebar ────────────────────────────────────── %>
-<div class="sidebar-footer">
-
-  <%# نتحقق بـ locals.user لضمان الوصول الصحيح %>
-  <% if (locals.user) { %>
-
-    <%# معلومات المستخدم %>
-    <div class="sidebar-footer-user" style="margin-bottom: 10px;">
-
-      <div class="sidebar-footer-avatar">
-        <%= locals.user.name.charAt(0).toUpperCase() %>
+  <%# أسفل الـ Sidebar %>
+  <div class="sidebar-footer">
+    <% if (locals.user) { %>
+      <%
+        var roleColors = {
+          admin:        { bg:'rgba(220,53,69,.15)',   color:'#f87171'  },
+          doctor:       { bg:'rgba(13,110,253,.15)',  color:'#60a5fa'  },
+          receptionist: { bg:'rgba(25,135,84,.15)',   color:'#4ade80'  },
+        };
+        var roleStyle = roleColors[locals.user.role] || roleColors.doctor;
+        var roleMap   = { admin:'مدير', doctor:'طبيب', receptionist:'استقبال' };
+      %>
+      <div class="sidebar-footer-user" style="margin-bottom:10px;">
+        <div class="sidebar-footer-avatar">
+          <%= locals.user.name.charAt(0).toUpperCase() %>
+        </div>
+        <div class="sidebar-footer-info">
+          <div class="sidebar-footer-name"><%= locals.user.name %></div>
+          <div class="sidebar-footer-role">
+            <span style="background:<%= roleStyle.bg %>; color:<%= roleStyle.color %>;
+                         padding:1px 7px; border-radius:6px; font-size:10px; font-weight:700;">
+              <%= roleMap[locals.user.role] || locals.user.role %>
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div class="sidebar-footer-info">
-        <div class="sidebar-footer-name">
-          <%= locals.user.name %>
-        </div>
-        <div class="sidebar-footer-role">
-          <%= locals.user.roleLabel %>
-        </div>
+      <div style="display:flex; gap:6px;">
+        <a href="/auth/profile"
+           style="flex:1; display:flex; align-items:center; justify-content:center;
+                  gap:4px; padding:8px 4px; border-radius:9px; font-size:12px;
+                  font-weight:600; text-decoration:none;
+                  background:rgba(255,255,255,.08); color:#a8b2d8;
+                  border:1px solid rgba(255,255,255,.08);">
+          ⚙️ حسابي
+        </a>
+        <a href="/auth/logout"
+           style="flex:1; display:flex; align-items:center; justify-content:center;
+                  gap:4px; padding:8px 4px; border-radius:9px; font-size:12px;
+                  font-weight:600; text-decoration:none;
+                  background:rgba(220,53,69,.12); color:#f87171;
+                  border:1px solid rgba(220,53,69,.2);">
+          🚪 خروج
+        </a>
       </div>
 
-    </div>
-
-    <%# زرا حسابي وخروج %>
-    <div style="display: flex; gap: 6px;">
-
-      <a href="/auth/profile"
-         style="
-           flex: 1;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           gap: 5px;
-           padding: 8px 4px;
-           border-radius: 9px;
-           font-size: 12px;
-           font-weight: 600;
-           text-decoration: none;
-           background: rgba(255,255,255,0.08);
-           color: #a8b2d8;
-           border: 1px solid rgba(255,255,255,0.08);
-           transition: background 0.2s;
-         ">
-        ⚙️ حسابي
+    <% } else { %>
+      <a href="/auth/login"
+         style="display:block; text-align:center; padding:10px; border-radius:10px;
+                background:rgba(13,110,253,.2); color:#60a5fa;
+                font-size:13px; font-weight:600; text-decoration:none;">
+        🔑 تسجيل الدخول
       </a>
-
-      <a href="/auth/logout"
-         style="
-           flex: 1;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           gap: 5px;
-           padding: 8px 4px;
-           border-radius: 9px;
-           font-size: 12px;
-           font-weight: 600;
-           text-decoration: none;
-           background: rgba(220,53,69,0.12);
-           color: #f87171;
-           border: 1px solid rgba(220,53,69,0.2);
-           transition: background 0.2s;
-         ">
-        🚪 خروج
-      </a>
-
-    </div>
-
-  <% } else { %>
-
-    <a href="/auth/login"
-       style="
-         display: block;
-         text-align: center;
-         padding: 10px;
-         border-radius: 10px;
-         background: rgba(13,110,253,0.18);
-         color: #60a5fa;
-         font-size: 13px;
-         font-weight: 600;
-         text-decoration: none;
-       ">
-      🔑 تسجيل الدخول
-    </a>
-
-  <% } %>
-
-</div>
+    <% } %>
+  </div>
 
 </aside>
-
-<%# طبقة التعتيم للموبايل %>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
