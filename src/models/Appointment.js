@@ -115,6 +115,15 @@ const appointmentSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // في appointmentSchema أضف:
+    reminderSent: {
+        type:    Boolean,
+        default: false,
+    },
+    reminderSentAt: {
+        type:    Date,
+        default: null,
+    },
   },
   {
     timestamps: true,

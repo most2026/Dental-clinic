@@ -2,7 +2,7 @@
 // src/controllers/appointmentController.js — إدارة المواعيد
 // ============================================================
 'use strict';
-
+const whatsapp = require('../utils/whatsapp');
 const Appointment = require('../models/Appointment');
 const Patient     = require('../models/Patient');
 const { asyncHandler, buildValidationMessage } = require('../middlewares/errorHandler');
@@ -472,9 +472,104 @@ function hasConflict(slot, duration, bookedAppointments) {
     return start < aEnd && end > aStart;
   });
 }
+// ────────────────────────────────────────────────────────────
+// GET /appointments/reminders — صفحة إدارة التذكيرات
+// ────────────────────────────────────────────────────────────
+const reminders = asyncHandler(async (req, res) => {
+  // مواعيد اليوم والغد لم يُرسَل لها تذكير
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(23, 59, 59, 999);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcoming = await Appointment.find({
+    appointmentDate: { $gte: today, $lte: tomorrow },
+    status:          { $nin: ['cancelled', 'no_show', 'completed'] },
+  })
+    .populate('patient', 'firstName lastName phone patientCode')
+    .sort({ appointmentDate: 1, startTime: 1 });
+
+  // كل مواعيد لم يُرسَل لها تذكير (آخر 7 أيام + قادمة)
+  const weekAhead = new Date();
+  weekAhead.setDate(weekAhead.getDate() + 7);
+
+  const needReminder = await Appointment.find({
+    appointmentDate:  { $gte: today, $lte: weekAhead },
+    reminderSent:     false,
+    status:           { $nin: ['cancelled', 'no_show'] },
+  })
+    .populate('patient', 'firstName lastName phone patientCode')
+    .sort({ appointmentDate: 1, startTime: 1 });
+
+  const clinicName = process.env.CLINIC_NAME || 'عيادة الأسنان';
+
+  // بناء روابط الواتساب لكل موعد
+  const appointmentsWithLinks = upcoming.map(apt => {
+    const data = whatsapp.buildAppointmentData(apt, clinicName);
+    const msg  = whatsapp.TEMPLATES.appointmentReminder(data);
+    const link = whatsapp.buildWhatsAppLink(apt.patient.phone, msg);
+    return { ...apt.toObject(), whatsappLink: link };
+  });
+
+  res.render('appointments/reminders', {
+    title:              'إشعارات واتساب',
+    upcoming:           appointmentsWithLinks,
+    needReminder,
+    clinicName,
+    totalNeedReminder:  needReminder.length,
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// POST /appointments/:id/remind — تسجيل إرسال التذكير
+// ────────────────────────────────────────────────────────────
+const markReminderSent = asyncHandler(async (req, res) => {
+  const apt = await Appointment.findByIdAndUpdate(
+    req.params.id,
+    {
+      reminderSent:   true,
+      reminderSentAt: new Date(),
+    },
+    { new: true }
+  );
+
+  if (!apt) {
+    return res.status(404).json({ success: false, message: 'الموعد غير موجود' });
+  }
+
+  res.json({ success: true, message: 'تم تسجيل إرسال التذكير ✅' });
+});
+
+// ────────────────────────────────────────────────────────────
+// GET /appointments/:id/whatsapp — بناء رابط واتساب للموعد
+// ────────────────────────────────────────────────────────────
+const getWhatsAppLink = asyncHandler(async (req, res) => {
+  const apt = await Appointment.findById(req.params.id)
+    .populate('patient', 'firstName lastName phone');
+
+  if (!apt) {
+    return res.status(404).json({ success: false, message: 'الموعد غير موجود' });
+  }
+
+  const { template = 'appointmentReminder' } = req.query;
+  const clinicName = process.env.CLINIC_NAME || 'عيادة الأسنان';
+  const data       = whatsapp.buildAppointmentData(apt, clinicName);
+
+  const templateFn = whatsapp.TEMPLATES[template];
+  if (!templateFn) {
+    return res.status(400).json({ success: false, message: 'قالب غير موجود' });
+  }
+
+  const message = templateFn(data);
+  const link    = whatsapp.buildWhatsAppLink(apt.patient.phone, message);
+
+  res.json({ success: true, link, message });
+});
 
 module.exports = {
   index, today, newForm, create,
   show, editForm, update, updateStatus,
-  destroy, getAvailableSlots,
+  destroy, getAvailableSlots,  reminders, markReminderSent, getWhatsAppLink,
 };

@@ -42,7 +42,11 @@
        class="sidebar-link <%= currentPath === '/appointments/new' ? 'active' : '' %>">
       <span class="sidebar-link-icon">📌</span> حجز موعد
     </a>
-
+    <a href="/appointments/reminders"
+   class="sidebar-link <%= currentPath === '/appointments/reminders' ? 'active' : '' %>">
+  <span class="sidebar-link-icon">📱</span>
+  إشعارات واتساب
+</a>
     <%# الفواتير — جميع الأدوار %>
     <p class="sidebar-section-title">المالية</p>
     <a href="/invoices"

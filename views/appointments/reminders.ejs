@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title><%= title %> | <%= clinicName %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .wa-card {
+      background: #fff; border-radius: 14px;
+      border: 1.5px solid #eef0f5;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      padding: 16px; margin-bottom: 12px;
+      transition: all .2s;
+    }
+    .wa-card:hover { border-color: #25d366; box-shadow: 0 4px 20px rgba(37,211,102,.15); }
+
+    .wa-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 18px; border-radius: 10px; font-size: 14px;
+      font-weight: 700; text-decoration: none; cursor: pointer;
+      transition: all .2s; border: none; font-family: inherit;
+    }
+    .wa-btn-primary {
+      background: #25d366; color: #fff;
+      box-shadow: 0 4px 12px rgba(37,211,102,.35);
+    }
+    .wa-btn-primary:hover {
+      background: #1da851; color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37,211,102,.45);
+    }
+    .wa-btn-outline {
+      background: transparent; color: #25d366;
+      border: 1.5px solid #25d366;
+    }
+    .wa-btn-outline:hover { background: #f0fdf4; }
+
+    .reminder-sent-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px;
+      font-weight: 600; background: #dcfce7; color: #166534;
+    }
+    .wa-icon { font-size: 20px; }
+
+    .template-selector {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .template-btn {
+      padding: 4px 12px; border-radius: 20px; font-size: 12px;
+      border: 1.5px solid #e2e8f0; background: #f8f9fc;
+      cursor: pointer; transition: .15s; font-weight: 600; color: #64748b;
+    }
+    .template-btn.active {
+      background: #25d366; color: #fff; border-color: #25d366;
+    }
+
+    .stats-bar {
+      background: linear-gradient(135deg, #075e54, #128c7e);
+      border-radius: 14px; padding: 20px 24px; color: #fff;
+      margin-bottom: 24px;
+      display: flex; align-items: center;
+      justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    }
+    .stat-wa {
+      text-align: center;
+      padding: 0 20px;
+      border-left: 1px solid rgba(255,255,255,.2);
+    }
+    .stat-wa:first-child { border-left: none; padding-right: 0; }
+    .stat-wa-value { font-size: 28px; font-weight: 800; }
+    .stat-wa-label { font-size: 12px; opacity: .8; margin-top: 2px; }
+
+    /* Message Preview */
+    .msg-preview {
+      background: #dcf8c6; border-radius: 12px 12px 0 12px;
+      padding: 12px 14px; font-size: 13px; line-height: 1.6;
+      color: #1a1a1a; white-space: pre-wrap; word-break: break-word;
+      max-width: 380px; border: 1px solid #c5e8a8;
+      box-shadow: 0 1px 2px rgba(0,0,0,.1);
+    }
+    .phone-frame {
+      background: #e5ddd5; border-radius: 12px; padding: 16px;
+      position: relative;
+    }
+    .phone-frame::before {
+      content: 'معاينة الرسالة';
+      display: block; font-size: 11px; color: #667781;
+      margin-bottom: 10px; font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('../partials/sidebar') %>
+  <div class="main-content">
+    <%- include('../partials/navbar') %>
+    <main class="page-content">
+
+      <% if (successMsg) { %>
+        <div class="flash-alert alert alert-success alert-dismissible">
+          ✅ <%= successMsg %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } %>
+
+      <%# رأس الصفحة %>
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">📱 إشعارات واتساب</h1>
+          <p class="page-subtitle">إرسال تذكيرات المواعيد للمرضى عبر واتساب</p>
+        </div>
+        <a href="/appointments" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-right me-1"></i> المواعيد
+        </a>
+      </div>
+
+      <%# إحصائيات الواتساب %>
+      <div class="stats-bar">
+        <div>
+          <div style="font-size:22px; font-weight:800;">📱 واتساب العيادة</div>
+          <div style="font-size:13px; opacity:.8; margin-top:4px;">
+            إرسال تذكيرات تلقائية للمرضى
+          </div>
+        </div>
+        <div class="d-flex gap-0 flex-wrap">
+          <div class="stat-wa">
+            <div class="stat-wa-value"><%= upcoming.length %></div>
+            <div class="stat-wa-label">مواعيد اليوم والغد</div>
+          </div>
+          <div class="stat-wa">
+            <div class="stat-wa-value"><%= totalNeedReminder %></div>
+            <div class="stat-wa-label">تحتاج تذكير</div>
+          </div>
+          <div class="stat-wa">
+            <div class="stat-wa-value">
+              <%= upcoming.filter(a => a.reminderSent).length %>
+            </div>
+            <div class="stat-wa-label">أُرسل لها</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+
+        <%# قائمة المواعيد %>
+        <div class="col-12 col-xl-7">
+
+          <%# تذكيرات اليوم والغد %>
+          <div class="app-card mb-4">
+            <div class="app-card-header">
+              <h2 class="app-card-title">
+                🗓️ مواعيد اليوم والغد
+              </h2>
+              <% if (upcoming.length > 0) { %>
+                <button class="btn btn-sm wa-btn-primary"
+                  onclick="sendAllReminders()"
+                  style="padding:6px 14px; font-size:12px;">
+                  📤 إرسال الكل
+                </button>
+              <% } %>
+            </div>
+            <div class="app-card-body p-0">
+
+              <% if (upcoming.length === 0) { %>
+                <div class="text-center py-5 text-muted">
+                  <div style="font-size:3rem;">📭</div>
+                  <p class="mt-2">لا توجد مواعيد قادمة تحتاج تذكير</p>
+                </div>
+              <% } else { %>
+                <% upcoming.forEach(function(apt) {
+                  var dateStr = new Date(apt.appointmentDate).toLocaleDateString('ar-IQ',{
+                    weekday:'short', day:'numeric', month:'short'
+                  });
+                  var TREATMENT_AR = {
+                    checkup:'كشف', cleaning:'تنظيف', filling:'حشو',
+                    extraction:'خلع', root_canal:'علاج عصب', crown:'تاج',
+                    bridge:'جسر', implant:'زراعة', whitening:'تبييض',
+                    orthodontics:'تقويم', surgery:'جراحة', consultation:'استشارة', other:'أخرى'
+                  };
+                %>
+                <div class="wa-card d-flex align-items-center gap-3 flex-wrap"
+                     id="apt-card-<%= apt._id %>">
+
+                  <%# معلومات المريض %>
+                  <div class="patient-avatar" style="flex-shrink:0;">
+                    <%= apt.patient.firstName.charAt(0) %>
+                  </div>
+
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold">
+                      <%= apt.patient.firstName %> <%= apt.patient.lastName %>
+                    </div>
+                    <div class="text-muted small">
+                      📅 <%= dateStr %> — 🕐 <%= apt.startTime %>
+                      — 🩺 <%= TREATMENT_AR[apt.treatmentType] || apt.treatmentType %>
+                    </div>
+                    <div class="text-muted small" dir="ltr">
+                      📞 <%= apt.patient.phone %>
+                    </div>
+                  </div>
+
+                  <%# الحالة والأزرار %>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+
+                    <% if (apt.reminderSent) { %>
+                      <span class="reminder-sent-badge">
+                        ✅ تم الإرسال
+                      </span>
+                    <% } %>
+
+                    <%# زر إرسال الواتساب %>
+                    <% if (apt.whatsappLink) { %>
+                      <a href="<%= apt.whatsappLink %>" target="_blank"
+                         class="wa-btn wa-btn-primary"
+                         onclick="markSent('<%= apt._id %>')">
+                        <span class="wa-icon">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                          </svg>
+                        </span>
+                        إرسال تذكير
+                      </a>
+                    <% } else { %>
+                      <span class="text-muted small">❌ رقم غير صالح</span>
+                    <% } %>
+
+                    <%# قائمة القوالب %>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                        data-bs-toggle="dropdown" style="font-size:12px;">
+                        قوالب أخرى
+                      </button>
+                      <ul class="dropdown-menu shadow border-0 rounded-3"
+                          style="min-width:180px;">
+                        <% var templates = [
+                          { key:'appointmentReminder',  label:'🔔 تذكير موعد'    },
+                          { key:'appointmentConfirmed', label:'✅ تأكيد موعد'    },
+                          { key:'appointmentCancelled', label:'❌ إلغاء موعد'    },
+                          { key:'welcome',              label:'👋 ترحيب بمريض جديد' },
+                        ];
+                        templates.forEach(function(t) { %>
+                          <li>
+                            <a class="dropdown-item small py-2"
+                               href="#"
+                               onclick="openTemplateModal('<%= apt._id %>','<%= apt.patient.phone %>','<%= t.key %>','<%= apt.patient.firstName %> <%= apt.patient.lastName %>'); return false;">
+                              <%= t.label %>
+                            </a>
+                          </li>
+                        <% }) %>
+                      </ul>
+                    </div>
+
+                  </div>
+                </div>
+                <% }) %>
+              <% } %>
+
+            </div>
+          </div>
+
+          <%# المواعيد التي تحتاج تذكير (الأسبوع القادم) %>
+          <% if (needReminder.length > 0) { %>
+          <div class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">
+                ⏰ تحتاج تذكير — الأسبوع القادم
+                <span class="badge bg-warning-subtle text-warning ms-1">
+                  <%= needReminder.length %>
+                </span>
+              </h2>
+            </div>
+            <div class="app-card-table">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>المريض</th>
+                    <th>التاريخ</th>
+                    <th>الوقت</th>
+                    <th>الهاتف</th>
+                    <th>إرسال</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% needReminder.forEach(function(apt) { %>
+                  <tr id="remind-row-<%= apt._id %>">
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="patient-avatar" style="width:28px;height:28px;font-size:11px;">
+                          <%= apt.patient.firstName.charAt(0) %>
+                        </div>
+                        <span class="small fw-semibold">
+                          <%= apt.patient.firstName %> <%= apt.patient.lastName %>
+                        </span>
+                      </div>
+                    </td>
+                    <td class="small">
+                      <%= new Date(apt.appointmentDate).toLocaleDateString('ar-IQ',{day:'numeric',month:'short'}) %>
+                    </td>
+                    <td class="small fw-bold text-primary"><%= apt.startTime %></td>
+                    <td class="small" dir="ltr"><%= apt.patient.phone %></td>
+                    <td>
+                      <button class="wa-btn wa-btn-primary"
+                        style="padding:5px 12px; font-size:12px;"
+                        onclick="quickSend('<%= apt._id %>','<%= apt.patient.phone %>')">
+                        📤 إرسال
+                      </button>
+                    </td>
+                  </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <% } %>
+
+        </div>
+
+        <%# العمود الأيمن: معاينة الرسائل %>
+        <div class="col-12 col-xl-5">
+
+          <%#اختيار القالب للمعاينة %>
+          <div class="app-card mb-3">
+            <div class="app-card-header">
+              <h2 class="app-card-title">👁️ معاينة القوالب</h2>
+            </div>
+            <div class="app-card-body">
+
+              <div class="template-selector">
+                <button class="template-btn active"
+                  onclick="previewTemplate('reminder', this)">🔔 تذكير</button>
+                <button class="template-btn"
+                  onclick="previewTemplate('confirmed', this)">✅ تأكيد</button>
+                <button class="template-btn"
+                  onclick="previewTemplate('cancelled', this)">❌ إلغاء</button>
+                <button class="template-btn"
+                  onclick="previewTemplate('welcome', this)">👋 ترحيب</button>
+                <button class="template-btn"
+                  onclick="previewTemplate('orthodontic', this)">😁 تقويم</button>
+                <button class="template-btn"
+                  onclick="previewTemplate('payment', this)">💰 دفع</button>
+              </div>
+
+              <div class="phone-frame">
+                <div class="msg-preview" id="msgPreview">
+                  جاري التحميل...
+                </div>
+              </div>
+
+              <div class="mt-3 d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary flex-grow-1"
+                  onclick="copyMessage()">
+                  📋 نسخ الرسالة
+                </button>
+                <button class="btn btn-sm wa-btn-outline flex-grow-1"
+                  onclick="openCustomSend()">
+                  📤 إرسال مخصص
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <%# إرسال مخصص %>
+          <div class="app-card" id="customSendCard" style="display:none;">
+            <div class="app-card-header">
+              <h2 class="app-card-title">✏️ إرسال رسالة مخصصة</h2>
+              <button onclick="document.getElementById('customSendCard').style.display='none'"
+                class="btn btn-sm btn-outline-secondary">إغلاق</button>
+            </div>
+            <div class="app-card-body">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">رقم الهاتف</label>
+                <input type="tel" id="customPhone" class="form-control"
+                  placeholder="07XXXXXXXXX" dir="ltr"/>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">الرسالة</label>
+                <textarea id="customMessage" class="form-control" rows="6"
+                  placeholder="اكتب رسالتك هنا..."></textarea>
+              </div>
+              <button class="wa-btn wa-btn-primary w-100" onclick="sendCustomMessage()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                فتح واتساب وإرسال
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/main.js"></script>
+<script>
+// ── قوالب الرسائل (JavaScript) ────────────────────────────────
+var CLINIC = '<%= clinicName %>';
+var TEMPLATES = {
+  reminder: `🦷 *${CLINIC}*\n\nمرحباً [اسم المريض] 👋\n\nنود تذكيركم بموعدكم:\n\n📅 *التاريخ:* [التاريخ]\n🕐 *الوقت:* [الوقت]\n🩺 *نوع العلاج:* [العلاج]\n\nيرجى الحضور قبل الموعد بـ 10 دقائق.\n\nشكراً لثقتكم 🌟`,
+  confirmed: `✅ *${CLINIC}*\n\nأهلاً [اسم المريض]،\n\nتم تأكيد موعدكم بنجاح ✅\n\n📅 *التاريخ:* [التاريخ]\n🕐 *الوقت:* [الوقت]\n\nنتطلع لرؤيتكم 😊`,
+  cancelled: `❌ *${CLINIC}*\n\nعزيزنا [اسم المريض]،\n\nنعتذر منكم، تم إلغاء موعدكم.\n\nيرجى التواصل معنا لإعادة الجدولة.\n\nنعتذر عن أي إزعاج 🙏`,
+  welcome:   `🦷 *${CLINIC}*\n\nأهلاً وسهلاً [اسم المريض] 🌟\n\nيسعدنا انضمامكم لعائلة عيادتنا.\n\n🪪 *رقمك في العيادة:* [الكود]\n\nنتمنى لكم دوام الصحة 😊`,
+  orthodontic:`😁 *${CLINIC}*\n\nمرحباً [اسم المريض]،\n\nتذكير بموعد متابعة التقويم:\n\n📅 *التاريخ:* [التاريخ]\n🕐 *الوقت:* [الوقت]\n🦷 *الطقم الحالي:* #[الرقم]\n\nتذكر ارتداء الأطقم 22 ساعة يومياً 💪`,
+  payment:   `💰 *${CLINIC}*\n\nعزيزنا [اسم المريض]،\n\nنود تذكيركم بوجود مبلغ مستحق:\n\n🧾 *رقم الفاتورة:* [الرقم]\n💵 *المبلغ المتبقي:* [المبلغ] د.ع\n\nشكراً لتعاونكم 🙏`,
+};
+
+var currentTemplate = 'reminder';
+
+// ── معاينة القالب ─────────────────────────────────────────────
+function previewTemplate(key, btn) {
+  currentTemplate = key;
+  document.querySelectorAll('.template-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  document.getElementById('msgPreview').textContent = TEMPLATES[key] || '';
+}
+
+// تحميل القالب الأول
+previewTemplate('reminder', document.querySelector('.template-btn.active'));
+
+// ── نسخ الرسالة ───────────────────────────────────────────────
+async function copyMessage() {
+  var text = document.getElementById('msgPreview').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    alert('✅ تم نسخ الرسالة');
+  } catch {
+    alert('يرجى النسخ يدوياً');
+  }
+}
+
+// ── إرسال تذكير وتسجيله ──────────────────────────────────────
+function markSent(aptId) {
+  setTimeout(function() {
+    fetch('/appointments/' + aptId + '/remind', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.success) {
+        var card = document.getElementById('apt-card-' + aptId);
+        if (card) {
+          var badge = card.querySelector('.reminder-sent-badge');
+          if (!badge) {
+            var span = document.createElement('span');
+            span.className = 'reminder-sent-badge';
+            span.textContent = '✅ تم الإرسال';
+            card.querySelector('.d-flex.align-items-center').prepend(span);
+          }
+        }
+      }
+    });
+  }, 500);
+}
+
+// ── إرسال سريع من جدول الأسبوع ───────────────────────────────
+async function quickSend(aptId, phone) {
+  var res  = await fetch('/appointments/' + aptId + '/whatsapp?template=appointmentReminder');
+  var data = await res.json();
+  if (data.link) {
+    window.open(data.link, '_blank');
+    markSent(aptId);
+    var row = document.getElementById('remind-row-' + aptId);
+    if (row) {
+      row.style.opacity    = '0.5';
+      row.style.transition = '.3s';
+    }
+  }
+}
+
+// ── إرسال الكل ───────────────────────────────────────────────
+function sendAllReminders() {
+  var links = document.querySelectorAll('a.wa-btn-primary[href]');
+  if (!links.length) return;
+  if (!confirm('سيتم فتح ' + links.length + ' نافذة واتساب. هل تريد المتابعة؟')) return;
+  links.forEach(function(link, i) {
+    setTimeout(function() { window.open(link.href, '_blank'); }, i * 800);
+    var id = link.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+    if (id) markSent(id);
+  });
+}
+
+// ── إرسال مخصص ───────────────────────────────────────────────
+function openCustomSend() {
+  document.getElementById('customSendCard').style.display = 'block';
+  document.getElementById('customMessage').value = TEMPLATES[currentTemplate] || '';
+}
+
+function sendCustomMessage() {
+  var phone = document.getElementById('customPhone').value.trim();
+  var msg   = document.getElementById('customMessage').value.trim();
+  if (!phone || !msg) { alert('يرجى إدخال الرقم والرسالة'); return; }
+
+  // تنسيق الرقم
+  var cleaned = phone.replace(/[\s\-\(\)\.]/g, '');
+  if (cleaned.startsWith('07') && cleaned.length === 11) {
+    cleaned = '964' + cleaned.substring(1);
+  }
+
+  var link = 'https://wa.me/' + cleaned + '?text=' + encodeURIComponent(msg);
+  window.open(link, '_blank');
+}
+
+// ── فتح مودال القوالب ─────────────────────────────────────────
+function openTemplateModal(aptId, phone, templateKey, patientName) {
+  fetch('/appointments/' + aptId + '/whatsapp?template=' + templateKey)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.link) {
+        window.open(data.link, '_blank');
+        markSent(aptId);
+      }
+    });
+}
+</script>
+</body>
+</html>

@@ -8,34 +8,28 @@ const router  = express.Router();
 const ctrl    = require('../controllers/appointmentController');
 const { validateObjectId } = require('../middlewares/errorHandler');
 
-// GET  /appointments/available-slots  — أوقات متاحة (AJAX)
+// 1. المسارات الثابتة (Static Routes) - يجب أن تكون في الأعلى دائماً
 router.get('/available-slots', ctrl.getAvailableSlots);
-
-// GET  /appointments/today            — تقويم اليوم
 router.get('/today', ctrl.today);
-
-// GET  /appointments                  — القائمة الكاملة
-router.get('/', ctrl.index);
-
-// GET  /appointments/new              — نموذج الحجز
 router.get('/new', ctrl.newForm);
 
-// POST /appointments                  — حفظ موعد جديد
+// تم نقل مسار الإشعارات هنا ليعمل بشكل صحيح قبل فحص الـ ID
+router.get('/reminders', ctrl.reminders); 
+
+router.get('/', ctrl.index);
 router.post('/', ctrl.create);
 
-// GET  /appointments/:id              — تفاصيل الموعد
+
+// 2. المسارات المتغيرة (Dynamic Routes) - تحتوي على :id وتوضع في الأسفل
 router.get('/:id', validateObjectId, ctrl.show);
-
-// GET  /appointments/:id/edit         — نموذج التعديل
 router.get('/:id/edit', validateObjectId, ctrl.editForm);
-
-// PUT  /appointments/:id              — تحديث كامل
 router.put('/:id', validateObjectId, ctrl.update);
-
-// PATCH /appointments/:id/status      — تحديث الحالة فقط (AJAX)
 router.patch('/:id/status', validateObjectId, ctrl.updateStatus);
-
-// DELETE /appointments/:id            — إلغاء موعد
 router.delete('/:id', validateObjectId, ctrl.destroy);
+
+// مسارات الواتس التابعة للـ ID
+router.get ('/:id/whatsapp',        validateObjectId, ctrl.getWhatsAppLink);
+router.post('/:id/remind',          validateObjectId, ctrl.markReminderSent);
+
 
 module.exports = router;
