@@ -150,14 +150,18 @@ appointmentSchema.virtual('endTime').get(function () {
   return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
 });
 
-// ============================================================
-// Indexes
-// ============================================================
+// ── Indexes ───────────────────────────────────────────────────
 appointmentSchema.index({ patient: 1 });
 appointmentSchema.index({ appointmentDate: 1 });
 appointmentSchema.index({ status: 1 });
-// فهرس مركب لاستعلامات التقويم اليومي
 appointmentSchema.index({ appointmentDate: 1, startTime: 1 });
+appointmentSchema.index({ patient: 1, appointmentDate: -1 });
+appointmentSchema.index({ reminderSent: 1, appointmentDate: 1 }); // ← جديد
+appointmentSchema.index({ status: 1, appointmentDate: 1 });        // ← جديد
+appointmentSchema.index(
+  { appointmentDate: 1, status: 1, treatmentType: 1 },
+  { name: 'idx_apt_stats' }                                        // ← جديد
+);
 
 // ============================================================
 // Static Methods

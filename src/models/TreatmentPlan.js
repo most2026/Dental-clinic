@@ -170,10 +170,17 @@ treatmentPlanSchema.virtual('nextStage').get(function () {
   return this.stages.find(s => !s.isCompleted) || null;
 });
 
-// Indexes
+// ── Indexes ───────────────────────────────────────────────────
 treatmentPlanSchema.index({ patient: 1 });
-treatmentPlanSchema.index({ status:  1 });
+treatmentPlanSchema.index({ status: 1 });
 treatmentPlanSchema.index({ category: 1 });
 treatmentPlanSchema.index({ startDate: -1 });
-
+treatmentPlanSchema.index({ patient: 1, status: 1 });             // ← جديد
+treatmentPlanSchema.index(
+  { category: 1, status: 1, orthodonticType: 1 },
+  {
+    name: 'idx_plan_ortho',
+    partialFilterExpression: { category: 'orthodontic' },          // ← جديد: فهرس جزئي
+  }
+);
 module.exports = mongoose.model('TreatmentPlan', treatmentPlanSchema);

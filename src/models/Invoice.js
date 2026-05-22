@@ -303,14 +303,21 @@ invoiceSchema.virtual('paymentProgress').get(function () {
   return Math.min(100, Math.round((this.paidAmount / this.totalAmount) * 100));
 });
 
-// ============================================================
-// Indexes
-// ============================================================
-invoiceSchema.index({ invoiceNumber: 1 });
+// ── Indexes ───────────────────────────────────────────────────
+invoiceSchema.index({ invoiceNumber: 1 }, { unique: true });
 invoiceSchema.index({ patient: 1 });
 invoiceSchema.index({ status: 1 });
 invoiceSchema.index({ createdAt: -1 });
 invoiceSchema.index({ dueDate: 1, status: 1 });
+invoiceSchema.index({ patient: 1, status: 1 });                    // ← جديد
+invoiceSchema.index({ createdAt: 1, status: 1 });                  // ← جديد
+invoiceSchema.index(
+  { remainingAmount: 1, status: 1 },
+  {
+    name: 'idx_inv_remaining',
+    partialFilterExpression: { remainingAmount: { $gt: 0 } },      // ← جديد: فهرس جزئي
+  }
+);
 
 // ============================================================
 // Static Methods

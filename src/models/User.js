@@ -93,4 +93,11 @@ userSchema.virtual('roleLabel').get(function () {
   return ROLE_LABELS[this.role] || this.role;
 });
 
+// ── Indexes ───────────────────────────────────────────────────
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ lastLogin: -1 });
+
+
+
 module.exports = mongoose.model('User', userSchema);
