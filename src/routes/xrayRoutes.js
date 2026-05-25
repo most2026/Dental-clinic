@@ -8,6 +8,7 @@ const router   = express.Router({ mergeParams: true }); // ← مهم لوراث
 const ctrl     = require('../controllers/xrayController');
 const { uploadXray } = require('../utils/multerConfig');
 const { validateObjectId } = require('../middlewares/errorHandler');
+const { uploadLimiter } = require('../middlewares/security');
 
 // معالج أخطاء Multer المخصص
 const handleMulterError = (err, req, res, next) => {
@@ -39,6 +40,7 @@ router.get('/upload', validateObjectId, ctrl.uploadForm);
 router.post(
   '/',
   validateObjectId,
+  uploadLimiter, // ← إضافة Rate Limiting
   (req, res, next) => {
     // نمرر patientId لـ multerConfig عبر req.params
     uploadXray.array('xrayFiles', 10)(req, res, (err) => {

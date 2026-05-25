@@ -13,6 +13,12 @@ const morgan     = require('morgan');         // تسجيل طلبات HTTP في
 const session    = require('express-session');
 const MongoStore = require('connect-mongo').default;  // تخزين الجلسات في MongoDB
 const methodOverride = require('method-override'); // دعم PUT و DELETE من HTML forms
+const {
+  helmetMiddleware,
+  generalLimiter,
+  searchLimiter,
+  securityLogger,
+} = require('./src/middlewares/security');
 
 // --- 2. تحميل متغيرات البيئة من ملف .env ---
 require('dotenv').config();
@@ -41,10 +47,25 @@ app.set('views', path.join(__dirname, 'views'));
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true , limit: '10mb' }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
+// ============================================================
+// 🔐 إعدادات الأمان
+// ============================================================
+
+// Helmet — رؤوس HTTP الأمنية
+app.use(helmetMiddleware);
+app.use(securityLogger); 
+
+// Rate Limit العام — 200 طلب / 15 دقيقة
+app.use(generalLimiter);
+
+// Rate Limit البحث السريع
+app.use('/patients/search',    searchLimiter);
+app.use('/appointments/available-slots', searchLimiter);
 
 // ============================================================
 // 6. إعداد الجلسات

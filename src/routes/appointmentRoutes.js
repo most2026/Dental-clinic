@@ -7,7 +7,7 @@ const express = require('express');
 const router  = express.Router();
 const ctrl    = require('../controllers/appointmentController');
 const { validateObjectId } = require('../middlewares/errorHandler');
-
+const { whatsappLimiter } = require('../middlewares/security');
 // 1. المسارات الثابتة (Static Routes) - يجب أن تكون في الأعلى دائماً
 router.get('/available-slots', ctrl.getAvailableSlots);
 router.get('/today', ctrl.today);
@@ -28,8 +28,8 @@ router.patch('/:id/status', validateObjectId, ctrl.updateStatus);
 router.delete('/:id', validateObjectId, ctrl.destroy);
 
 // مسارات الواتس التابعة للـ ID
-router.get ('/:id/whatsapp',        validateObjectId, ctrl.getWhatsAppLink);
-router.post('/:id/remind',          validateObjectId, ctrl.markReminderSent);
+router.get ('/:id/whatsapp',        validateObjectId, whatsappLimiter, ctrl.getWhatsAppLink);
+router.post('/:id/remind',          validateObjectId, whatsappLimiter, ctrl.markReminderSent);
 
 
 module.exports = router;

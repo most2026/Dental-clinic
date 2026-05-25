@@ -1,25 +1,30 @@
-// ============================================================
-// src/routes/authRoutes.js
-// ============================================================
 'use strict';
 
-const express = require('express');
-const router  = express.Router();
-const ctrl    = require('../controllers/authController');
+const express  = require('express');
+const router   = express.Router();
+const ctrl     = require('../controllers/authController');
 const { redirectIfAuth, requireAuth, requireRole } = require('../middlewares/authMiddleware');
 
-// تسجيل الدخول
-router.get ('/login',    redirectIfAuth, ctrl.loginForm);
-router.post('/login',    redirectIfAuth, ctrl.login);
+// ← استيراد الـ limiters
+const {
+  loginLimiter,
+  whatsappLimiter,
+} = require('../middlewares/security');
 
-// تسجيل الخروج
-router.get ('/logout',   requireAuth, ctrl.logout);
+// GET  /auth/login
+router.get('/login',    redirectIfAuth, ctrl.loginForm);
 
-// إنشاء حساب (الأدمن فقط يصل له من لوحة التحكم)
+// POST /auth/login — مع Rate Limiting الصارم
+router.post('/login',   redirectIfAuth, loginLimiter, ctrl.login);
+
+// GET  /auth/logout
+router.get('/logout',   requireAuth, ctrl.logout);
+
+// GET/POST /auth/register
 router.get ('/register', requireAuth, requireRole('admin'), ctrl.registerForm);
 router.post('/register', requireAuth, requireRole('admin'), ctrl.register);
 
-// الملف الشخصي
+// GET/POST /auth/profile
 router.get ('/profile',  requireAuth, ctrl.profile);
 router.post('/profile',  requireAuth, ctrl.updateProfile);
 

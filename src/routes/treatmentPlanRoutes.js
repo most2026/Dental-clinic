@@ -8,6 +8,7 @@ const router  = express.Router();
 const ctrl    = require('../controllers/treatmentPlanController');
 const { validateObjectId }   = require('../middlewares/errorHandler');
 const { checkPermission }    = require('../middlewares/permissions');
+const { uploadLimiter } = require('../middlewares/security');
 
 const canView   = checkPermission('treatmentPlans', 'view');
 const canCreate = checkPermission('treatmentPlans', 'create');
@@ -20,7 +21,7 @@ router.post('/',                        canCreate, ctrl.create);
 router.get ('/:id',         validateObjectId, canView,   ctrl.show);
 router.get ('/:id/compare', validateObjectId, canView,   ctrl.compare);  // ← جديد
 router.get ('/:id/stages/add', validateObjectId, canEdit, ctrl.addStageForm);
-router.post('/:id/stages',     validateObjectId, canEdit, ctrl.addStage);
+router.post('/:id/stages',     validateObjectId, uploadLimiter, canEdit, ctrl.addStage);
 router.patch('/:id/status',    validateObjectId, canEdit, ctrl.updateStatus);
 router.delete('/:id/stages/:stageId', validateObjectId, canDelete, ctrl.deleteStage);
 
