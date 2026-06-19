@@ -1,141 +1,536 @@
 <%# ============================================================
-     views/partials/navbar.ejs — الشريط العلوي النهائي
+     views/partials/navbar.ejs — الشريط العلوي مع بحث شامل
      ============================================================ %>
 
 <header class="top-navbar">
 
   <%# زر Toggle للموبايل %>
-  <button class="sidebar-toggle" id="sidebarToggle" aria-label="القائمة">
-    ☰
-  </button>
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="القائمة">☰</button>
 
-  <%# شريط البحث السريع %>
-  <div class="navbar-search">
-    <input
-      type="text"
-      class="form-control"
-      id="globalSearch"
-      placeholder="🔍 بحث سريع..."
-      autocomplete="off"
-    />
+  <%# ── منطقة البحث الشامل ──────────────────────────────── %>
+  <div class="navbar-search" id="searchWrapper" style="position:relative; flex:1; max-width:480px;">
+
+    <%# حقل البحث %>
+    <div style="position:relative;">
+      <span style="position:absolute; right:12px; top:50%;
+                   transform:translateY(-50%); font-size:14px;
+                   color:#94a3b8; pointer-events:none;">🔍</span>
+      <input
+        type="text"
+        id="globalSearchInput"
+        class="form-control"
+        placeholder="بحث سريع — مريض، موعد، فاتورة..."
+        autocomplete="off"
+        style="padding-right:36px; padding-left:36px;"
+        aria-label="بحث شامل"
+      />
+      <%# زر مسح %>
+      <button id="clearSearchBtn"
+        style="position:absolute; left:10px; top:50%; transform:translateY(-50%);
+               background:none; border:none; color:#94a3b8; cursor:pointer;
+               font-size:16px; padding:0; line-height:1; display:none;"
+        onclick="clearSearch()"
+        title="مسح البحث">
+        ✕
+      </button>
+    </div>
+
+    <%# نتائج البحث المنسدلة %>
+    <div id="searchDropdown"
+         role="listbox"
+         aria-label="نتائج البحث"
+         style="
+           display: none;
+           position: absolute;
+           top: calc(100% + 6px);
+           right: 0; left: 0;
+           background: #fff;
+           border: 1.5px solid #e2e8f0;
+           border-radius: 14px;
+           box-shadow: 0 16px 48px rgba(0,0,0,0.14);
+           z-index: 2000;
+           max-height: 520px;
+           overflow-y: auto;
+           scrollbar-width: thin;
+           scrollbar-color: #e2e8f0 transparent;
+         ">
+    </div>
+
   </div>
 
-  <%# التاريخ الحالي %>
+  <%# التاريخ %>
   <div class="navbar-date" id="navbarDate">
     📆 <span id="currentDateDisplay">...</span>
   </div>
 
-  <%# أدوات الـ Navbar %>
+  <%# الأدوات %>
   <div class="navbar-actions">
 
-    <%# حجز موعد سريع %>
-    <a href="/appointments/new"
-       class="navbar-icon-btn" title="حجز موعد جديد">
-      📌
-    </a>
+    <a href="/appointments/new" class="navbar-icon-btn" title="حجز موعد">📌</a>
 
-    <%# الإشعارات %>
-    <button class="navbar-icon-btn" title="الإشعارات">
-      🔔
-    </button>
+    <a href="/appointments/reminders" class="navbar-icon-btn" title="إشعارات واتساب">📱</a>
 
-    <%# قائمة المستخدم المنسدلة %>
-    <% if (typeof user !== 'undefined' && user) { %>
-
+    <% if (locals.user) { %>
       <%
-        var roleMap = {
-          admin:        'مدير النظام',
-          doctor:       'طبيب أسنان',
-          receptionist: 'موظف استقبال'
+        var roleMap2 = {
+          admin:'مدير النظام', doctor:'طبيب أسنان', receptionist:'موظف استقبال'
         };
-        var roleLabel = roleMap[user.role] || user.role;
       %>
-
       <div class="dropdown">
-        <button
-          class="navbar-icon-btn dropdown-toggle"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          style="width:auto; gap:8px; padding:0 12px; font-size:13px; font-weight:600;"
-        >
-          <%# أفاتار المستخدم %>
-          <div style="
-            width: 30px; height: 30px; border-radius: 50%;
-            background: linear-gradient(135deg, #0d6efd, #6610f2);
-            display: inline-flex; align-items: center; justify-content: center;
-            color: white; font-weight: 700; font-size: 13px; flex-shrink: 0;">
-            <%= user.name ? user.name.charAt(0) : 'م' %>
+        <button class="navbar-icon-btn dropdown-toggle"
+          data-bs-toggle="dropdown" aria-expanded="false"
+          style="width:auto; padding:0 12px; gap:8px; font-size:13px; font-weight:600;">
+          <div style="width:30px;height:30px;border-radius:50%;
+                      background:linear-gradient(135deg,#0d6efd,#6610f2);
+                      display:inline-flex;align-items:center;justify-content:center;
+                      color:white;font-weight:700;font-size:13px;">
+            <%= locals.user.name.charAt(0).toUpperCase() %>
           </div>
-          <span class="d-none d-md-inline"><%= user.name %></span>
+          <span class="d-none d-md-inline"><%= locals.user.name %></span>
         </button>
-
         <ul class="dropdown-menu dropdown-menu-start shadow-lg border-0 rounded-3"
-            style="min-width: 220px;">
-
-          <%# معلومات المستخدم %>
+            style="min-width:220px;">
           <li>
-            <div class="px-3 py-2">
-              <div class="fw-bold" style="font-size:14px;">
-                <%= user.name %>
-              </div>
+            <div class="px-3 py-2 border-bottom">
+              <div class="fw-bold" style="font-size:14px;"><%= locals.user.name %></div>
               <div class="text-muted" style="font-size:12px;">
-                <%= roleLabel %>
+                <%= roleMap2[locals.user.role] || locals.user.role %>
               </div>
               <div class="text-muted" style="font-size:11px;" dir="ltr">
-                <%= user.email %>
+                <%= locals.user.email %>
               </div>
             </div>
           </li>
-
+          <li><a class="dropdown-item py-2" href="/auth/profile">👤 الملف الشخصي</a></li>
+          <li><a class="dropdown-item py-2" href="/settings">⚙️ الإعدادات</a></li>
           <li><hr class="dropdown-divider my-1"></li>
-
           <li>
-            <a class="dropdown-item d-flex align-items-center gap-2 py-2"
-               href="/auth/profile">
-              <span>👤</span>
-              <span>الملف الشخصي</span>
+            <a class="dropdown-item py-2 text-danger fw-semibold" href="/auth/logout">
+              🚪 تسجيل الخروج
             </a>
           </li>
-
-          <li>
-            <a class="dropdown-item d-flex align-items-center gap-2 py-2"
-               href="/settings">
-              <span>⚙️</span>
-              <span>الإعدادات</span>
-            </a>
-          </li>
-
-          <li>
-            <a class="dropdown-item d-flex align-items-center gap-2 py-2"
-               href="/treatments">
-              <span>🩺</span>
-              <span>كتالوج العلاجات</span>
-            </a>
-          </li>
-
-          <li><hr class="dropdown-divider my-1"></li>
-
-          <%# زر تسجيل الخروج %>
-          <li>
-            <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger fw-semibold"
-               href="/auth/logout">
-              <span>🚪</span>
-              <span>تسجيل الخروج</span>
-            </a>
-          </li>
-
         </ul>
       </div>
-
     <% } else { %>
-
-      <%# زر تسجيل الدخول إذا لم يكن مسجلاً %>
-      <a href="/auth/login" class="navbar-icon-btn" title="تسجيل الدخول"
-         style="font-size:13px; padding:0 12px; width:auto;">
+      <a href="/auth/login" class="navbar-icon-btn"
+         style="width:auto;padding:0 14px;font-size:13px;font-weight:600;">
         🔑 دخول
       </a>
-
     <% } %>
 
   </div>
 </header>
+
+<%# ── CSS خاص بالبحث ──────────────────────────────────────── %>
+<style>
+  /* نتيجة بحث واحدة */
+  .search-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background .12s;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 0;
+  }
+  .search-item:hover,
+  .search-item.focused {
+    background: #f0f4ff;
+    color: inherit;
+  }
+  .search-item:first-child { border-radius: 12px 12px 0 0; }
+  .search-item:last-child  { border-radius: 0 0 12px 12px; }
+
+  /* عنوان القسم */
+  .search-section-title {
+    padding: 8px 14px 4px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #94a3b8;
+    background: #fafbff;
+    border-top: 1px solid #f0f2f7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .search-section-title:first-child { border-top: none; }
+
+  /* أفاتار النتيجة */
+  .search-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd, #6610f2);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
+  .search-avatar.invoice  { background: linear-gradient(135deg, #f59e0b, #d97706); }
+  .search-avatar.plan     { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+  .search-avatar.apt      { background: linear-gradient(135deg, #10b981, #059669); }
+
+  /* نص النتيجة */
+  .search-title    { font-size: 14px; font-weight: 600; color: #1a202c; line-height: 1.3; }
+  .search-subtitle { font-size: 12px; color: #64748b; }
+  .search-meta     { font-size: 11px; color: #94a3b8; }
+
+  /* Badge */
+  .search-badge {
+    margin-right: auto; flex-shrink: 0;
+    font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600;
+  }
+  .badge-success   { background: #dcfce7; color: #166534; }
+  .badge-primary   { background: #dbeafe; color: #1d4ed8; }
+  .badge-warning   { background: #fef3c7; color: #92400e; }
+  .badge-danger    { background: #fee2e2; color: #991b1b; }
+  .badge-secondary { background: #f3f4f6; color: #6b7280; }
+  .badge-info      { background: #e0f2fe; color: #0369a1; }
+  .badge-purple    { background: #ede9fe; color: #5b21b6; }
+
+  /* النص المُضاء (Highlight) */
+  .search-highlight { background: #fef08a; border-radius: 3px; padding: 0 2px; }
+
+  /* حالات خاصة */
+  .search-empty, .search-loading, .search-error {
+    padding: 28px 16px;
+    text-align: center;
+    color: #94a3b8;
+  }
+  .search-empty-icon   { font-size: 2.5rem; margin-bottom: 8px; }
+  .search-spinner {
+    width: 28px; height: 28px; border: 3px solid #e2e8f0;
+    border-top-color: #0d6efd; border-radius: 50%;
+    animation: spin .7s linear infinite; margin: 0 auto 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Footer البحث */
+  .search-footer {
+    padding: 8px 14px;
+    border-top: 1px solid #f0f2f7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafbff;
+    border-radius: 0 0 14px 14px;
+  }
+  .search-shortcut {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; color: #94a3b8;
+  }
+  .search-shortcut kbd {
+    background: #f1f5f9; border: 1px solid #e2e8f0;
+    border-radius: 4px; padding: 1px 5px; font-size: 10px;
+  }
+</style>
+
+<%# ── JavaScript البحث الشامل ─────────────────────────────── %>
+<script>
+(function() {
+  'use strict';
+
+  var input      = document.getElementById('globalSearchInput');
+  var dropdown   = document.getElementById('searchDropdown');
+  var clearBtn   = document.getElementById('clearSearchBtn');
+  var wrapper    = document.getElementById('searchWrapper');
+  var timer      = null;
+  var lastQuery  = '';
+  var focusIndex = -1;
+  var allItems   = [];
+
+  if (!input) return;
+
+  // ── فتح/إغلاق ──────────────────────────────────────────────
+  function openDropdown()  { dropdown.style.display = 'block'; }
+  function closeDropdown() {
+    dropdown.style.display = 'none';
+    focusIndex = -1;
+    allItems   = [];
+  }
+
+  // ── إغلاق عند النقر خارج ───────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!wrapper.contains(e.target)) closeDropdown();
+  });
+
+  // ── اختصار لوحة المفاتيح: Ctrl+K أو / ─────────────────────
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      input.focus();
+      input.select();
+    }
+    if (e.key === 'Escape' && document.activeElement === input) {
+      clearSearch();
+      input.blur();
+    }
+  });
+
+  // ── الكتابة في حقل البحث ───────────────────────────────────
+  input.addEventListener('input', function() {
+    var q = this.value.trim();
+
+    clearBtn.style.display = q ? 'block' : 'none';
+
+    if (q.length < 2) {
+      closeDropdown();
+      lastQuery = '';
+      return;
+    }
+
+    if (q === lastQuery) return;
+    lastQuery = q;
+
+    clearTimeout(timer);
+    showLoading();
+    openDropdown();
+
+    timer = setTimeout(function() { doSearch(q); }, 320);
+  });
+
+  // ── التنقل بالأسهم ─────────────────────────────────────────
+  input.addEventListener('keydown', function(e) {
+    if (!dropdown.style.display || dropdown.style.display === 'none') return;
+
+    allItems = Array.from(dropdown.querySelectorAll('.search-item'));
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIndex = Math.min(focusIndex + 1, allItems.length - 1);
+      updateFocus();
+    }
+    else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIndex = Math.max(focusIndex - 1, -1);
+      updateFocus();
+    }
+    else if (e.key === 'Enter' && focusIndex >= 0) {
+      e.preventDefault();
+      var focused = allItems[focusIndex];
+      if (focused && focused.href) window.location.href = focused.href;
+    }
+  });
+
+  function updateFocus() {
+    allItems.forEach(function(item, i) {
+      item.classList.toggle('focused', i === focusIndex);
+    });
+    if (focusIndex >= 0 && allItems[focusIndex]) {
+      allItems[focusIndex].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  // ── حالة التحميل ───────────────────────────────────────────
+  function showLoading() {
+    dropdown.innerHTML = `
+      <div class="search-loading">
+        <div class="search-spinner"></div>
+        <div style="font-size:13px;">جاري البحث...</div>
+      </div>`;
+  }
+
+  // ── تنفيذ البحث ────────────────────────────────────────────
+  async function doSearch(q) {
+    try {
+      var res  = await fetch('/search?q=' + encodeURIComponent(q), {
+        headers: { 'Accept': 'application/json' },
+      });
+      var data = await res.json();
+
+      if (!data.success) throw new Error(data.message);
+
+      renderResults(data.results, data.total, q);
+
+    } catch (err) {
+      dropdown.innerHTML = `
+        <div class="search-error">
+          <div class="search-empty-icon">⚠️</div>
+          <div style="font-size:13px;">حدث خطأ في البحث</div>
+        </div>`;
+    }
+  }
+
+  // ── رسم النتائج ────────────────────────────────────────────
+  function renderResults(results, total, q) {
+    if (total === 0) {
+      dropdown.innerHTML = `
+        <div class="search-empty">
+          <div class="search-empty-icon">🔍</div>
+          <div style="font-size:14px; font-weight:600; color:#374151;">
+            لا توجد نتائج
+          </div>
+          <div style="font-size:12px; margin-top:4px;">
+            لم يُعثر على نتائج لـ "<strong>${escapeHtml(q)}</strong>"
+          </div>
+        </div>`;
+      return;
+    }
+
+    var html = '';
+
+    // ── المرضى ───────────────────────────────────────────────
+    if (results.patients && results.patients.length > 0) {
+      html += `
+        <div class="search-section-title">
+          <span>👥 المرضى</span>
+          <span style="font-size:10px; background:#e8f0fe; color:#1d4ed8;
+                       padding:1px 7px; border-radius:20px;">
+            ${results.patients.length}
+          </span>
+        </div>`;
+      results.patients.forEach(function(item) {
+        html += buildItem(item, q, 'patient');
+      });
+    }
+
+    // ── المواعيد ─────────────────────────────────────────────
+    if (results.appointments && results.appointments.length > 0) {
+      html += `
+        <div class="search-section-title">
+          <span>📅 المواعيد</span>
+          <span style="font-size:10px; background:#dcfce7; color:#166534;
+                       padding:1px 7px; border-radius:20px;">
+            ${results.appointments.length}
+          </span>
+        </div>`;
+      results.appointments.forEach(function(item) {
+        html += buildItem(item, q, 'apt');
+      });
+    }
+
+    // ── الفواتير ─────────────────────────────────────────────
+    if (results.invoices && results.invoices.length > 0) {
+      html += `
+        <div class="search-section-title">
+          <span>🧾 الفواتير</span>
+          <span style="font-size:10px; background:#fef3c7; color:#92400e;
+                       padding:1px 7px; border-radius:20px;">
+            ${results.invoices.length}
+          </span>
+        </div>`;
+      results.invoices.forEach(function(item) {
+        html += buildItem(item, q, 'invoice');
+      });
+    }
+
+    // ── خطط العلاج ───────────────────────────────────────────
+    if (results.plans && results.plans.length > 0) {
+      html += `
+        <div class="search-section-title">
+          <span>📋 خطط العلاج</span>
+          <span style="font-size:10px; background:#ede9fe; color:#5b21b6;
+                       padding:1px 7px; border-radius:20px;">
+            ${results.plans.length}
+          </span>
+        </div>`;
+      results.plans.forEach(function(item) {
+        html += buildItem(item, q, 'plan');
+      });
+    }
+
+    // ── Footer ────────────────────────────────────────────────
+    html += `
+      <div class="search-footer">
+        <span style="font-size:11px; color:#94a3b8;">
+          ${total} نتيجة
+        </span>
+        <div style="display:flex; gap:12px;">
+          <span class="search-shortcut">
+            <kbd>↑</kbd><kbd>↓</kbd> للتنقل
+          </span>
+          <span class="search-shortcut">
+            <kbd>Enter</kbd> للفتح
+          </span>
+          <span class="search-shortcut">
+            <kbd>Esc</kbd> للإغلاق
+          </span>
+        </div>
+      </div>`;
+
+    dropdown.innerHTML = html;
+    focusIndex = -1;
+    allItems   = Array.from(dropdown.querySelectorAll('.search-item'));
+  }
+
+  // ── بناء عنصر نتيجة واحدة ────────────────────────────────
+  function buildItem(item, q, type) {
+    var avatarClass = type === 'invoice' ? 'invoice'
+                    : type === 'plan'    ? 'plan'
+                    : type === 'apt'     ? 'apt' : '';
+
+    var avatarContent = item.initial && item.initial.length === 1
+      ? item.initial.toUpperCase()
+      : item.icon;
+
+    var highlightedTitle    = highlight(escapeHtml(item.title),    q);
+    var highlightedSubtitle = highlight(escapeHtml(item.subtitle), q);
+
+    return `
+      <a href="${item.url}" class="search-item" role="option"
+         onclick="onItemClick(event, '${item.url}')">
+        <div class="search-avatar ${avatarClass}">
+          ${avatarContent}
+        </div>
+        <div style="flex:1; overflow:hidden;">
+          <div class="search-title text-truncate">${highlightedTitle}</div>
+          <div class="search-subtitle text-truncate">${highlightedSubtitle}</div>
+          <div class="search-meta">${escapeHtml(item.meta || '')}</div>
+        </div>
+        <span class="search-badge badge-${item.badgeColor}">
+          ${escapeHtml(item.badge || '')}
+        </span>
+      </a>`;
+  }
+
+  // ── تمييز النص المبحوث عنه ───────────────────────────────
+  function highlight(text, query) {
+    if (!query || !text) return text;
+    var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var regex   = new RegExp('(' + escaped + ')', 'gi');
+    return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+  }
+
+  // ── Escape HTML ───────────────────────────────────────────
+  function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ── الانتقال عند النقر ────────────────────────────────────
+  window.onItemClick = function(e, url) {
+    closeDropdown();
+    clearSearch();
+  };
+
+  // ── مسح البحث ────────────────────────────────────────────
+  window.clearSearch = function() {
+    input.value          = '';
+    clearBtn.style.display = 'none';
+    lastQuery            = '';
+    closeDropdown();
+    clearTimeout(timer);
+  };
+
+  // ── عرض placeholder ديناميكي ─────────────────────────────
+  var hints = [
+    'بحث عن مريض بالاسم أو الهاتف...',
+    'ابحث برقم الفاتورة...',
+    'ابحث عن موعد...',
+    'ابحث بكود المريض...',
+    'بحث سريع — Ctrl+K',
+  ];
+  var hintIndex = 0;
+  setInterval(function() {
+    if (document.activeElement !== input && !input.value) {
+      hintIndex = (hintIndex + 1) % hints.length;
+      input.setAttribute('placeholder', hints[hintIndex]);
+    }
+  }, 3000);
+
+})();
+</script>

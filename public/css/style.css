@@ -988,3 +988,50 @@ html, body {
 
 .tool-btn:hover,
 .tool-btn.active { background: var(--primary); border-color: var(--primary); }
+
+/* ============================================================
+   البحث الشامل — تحسينات إضافية
+   ============================================================ */
+
+/* تأثير التركيز على حقل البحث */
+#globalSearchInput:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(13,110,253,0.12);
+  background: #fff;
+}
+
+/* تأثير ظهور الـ Dropdown */
+#searchDropdown {
+  animation: searchFadeIn .15s ease;
+}
+
+@keyframes searchFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* تعليم النص في النتائج */
+mark.search-highlight {
+  background: #fef08a;
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+/* شريط تمرير الـ Dropdown */
+#searchDropdown::-webkit-scrollbar { width: 5px; }
+#searchDropdown::-webkit-scrollbar-track { background: transparent; }
+#searchDropdown::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+/* الموبايل */
+@media (max-width: 575.98px) {
+  #searchWrapper { max-width: 100% !important; }
+  #searchDropdown {
+    right: -16px !important;
+    left:  -16px !important;
+    border-radius: 0 0 14px 14px;
+  }
+}

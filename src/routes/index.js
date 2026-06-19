@@ -24,5 +24,7 @@ router.use('/invoices',     require('./invoiceRoutes'));
 router.use ('/settings',                   require('./settingsRoutes'));
 router.use ('/treatments',                 require('./treatmentRoutes'));
 router.use('/treatment-plans', require('./treatmentPlanRoutes'));
+router.use('/search', require('./searchRoutes'));
+
 
 module.exports = router;
