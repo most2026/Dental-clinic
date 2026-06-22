@@ -58,39 +58,47 @@ const toothRecordSchema = new mongoose.Schema(
 // ============================================================
 const xrayRecordSchema = new mongoose.Schema(
   {
-    // اسم الملف بعد الرفع (سيُخزن في public/uploads)
     filename: {
-      type: String,
+      type:     String,
       required: [true, 'اسم ملف الأشعة مطلوب'],
-      trim: true,
+      trim:     true,
     },
 
-    // المسار الكامل للملف
+    // رابط الصورة الكامل على Cloudinary
     filepath: {
-      type: String,
+      type:     String,
       required: true,
     },
 
-    // نوع الأشعة
+    // ← جديد: المعرّف الفريد على Cloudinary (للحذف لاحقاً)
+    cloudinaryId: {
+      type:     String,
+      default:  null,
+    },
+
+    // ← جديد: نوع المصدر (image أو raw للـ PDF)
+    resourceType: {
+      type:     String,
+      enum:     ['image', 'raw'],
+      default:  'image',
+    },
+
     xrayType: {
       type: String,
       enum: ['panoramic', 'periapical', 'bitewing', 'cbct', 'other'],
       default: 'periapical',
     },
 
-    // الأسنان المرتبطة بهذه الأشعة
     relatedTeeth: [Number],
 
-    // ملاحظات الطبيب على الأشعة
     doctorNotes: {
-      type: String,
-      trim: true,
+      type:      String,
+      trim:      true,
       maxlength: [1000, 'الملاحظات لا يمكن أن تتجاوز 1000 حرف'],
     },
 
-    // تاريخ رفع الأشعة
     uploadedAt: {
-      type: Date,
+      type:    Date,
       default: Date.now,
     },
   },

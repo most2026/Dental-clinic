@@ -1,23 +1,18 @@
 // ============================================================
-// src/routes/xrayRoutes.js — مسارات نظام الأشعة
+// src/routes/xrayRoutes.js — محدّث لـ Cloudinary
 // ============================================================
 'use strict';
 
-const express  = require('express');
-const router   = express.Router({ mergeParams: true }); // ← مهم لوراثة patientId
-const ctrl     = require('../controllers/xrayController');
+const express = require('express');
+const router  = express.Router({ mergeParams: true });
+const ctrl    = require('../controllers/xrayController');
 const { uploadXray } = require('../utils/multerConfig');
 const { validateObjectId } = require('../middlewares/errorHandler');
 const { uploadLimiter } = require('../middlewares/security');
 
-// معالج أخطاء Multer المخصص
 const handleMulterError = (err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     req.session.errorMsg = 'حجم الملف كبير جداً (الحد الأقصى 20 ميجابايت)';
-    return res.redirect('back');
-  }
-  if (err.code === 'LIMIT_FILE_COUNT') {
-    req.session.errorMsg = 'لا يمكن رفع أكثر من 10 ملفات دفعة واحدة';
     return res.redirect('back');
   }
   if (err.message) {
@@ -27,22 +22,15 @@ const handleMulterError = (err, req, res, next) => {
   next(err);
 };
 
-// GET  /patients/:patientId/xrays/compare  — مقارنة أشعتين
 router.get('/compare', validateObjectId, ctrl.compare);
+router.get('/',        validateObjectId, ctrl.index);
+router.get('/upload',  validateObjectId, ctrl.uploadForm);
 
-// GET  /patients/:patientId/xrays          — المعرض
-router.get('/', validateObjectId, ctrl.index);
-
-// GET  /patients/:patientId/xrays/upload   — نموذج الرفع
-router.get('/upload', validateObjectId, ctrl.uploadForm);
-
-// POST /patients/:patientId/xrays          — رفع الملفات
 router.post(
   '/',
   validateObjectId,
-  uploadLimiter, // ← إضافة Rate Limiting
+  uploadLimiter,
   (req, res, next) => {
-    // نمرر patientId لـ multerConfig عبر req.params
     uploadXray.array('xrayFiles', 10)(req, res, (err) => {
       if (err) return handleMulterError(err, req, res, next);
       next();
@@ -51,13 +39,8 @@ router.post(
   ctrl.upload
 );
 
-// GET    /patients/:patientId/xrays/:xrayId  — عرض صورة
-router.get('/:xrayId', validateObjectId, ctrl.show);
-
-// PATCH  /patients/:patientId/xrays/:xrayId  — تحديث ملاحظات
-router.patch('/:xrayId', validateObjectId, ctrl.updateNotes);
-
-// DELETE /patients/:patientId/xrays/:xrayId  — حذف
+router.get   ('/:xrayId', validateObjectId, ctrl.show);
+router.patch ('/:xrayId', validateObjectId, ctrl.updateNotes);
 router.delete('/:xrayId', validateObjectId, ctrl.destroy);
 
 module.exports = router;

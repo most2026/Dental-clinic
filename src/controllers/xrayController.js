@@ -10,11 +10,11 @@ const {
   buildValidationMessage,
 } = require('../middlewares/errorHandler');
 const {
-  deleteFileFromDisk,
-  buildPublicPath,
+  deleteFromCloudinary,   // ← بدّل deleteFileFromDisk بهذا
   validateUploadedFile,
   XRAY_TYPES_LABELS,
 } = require('../utils/multerConfig');
+
 
 // ────────────────────────────────────────────────────────────
 // GET /patients/:patientId/xrays — معرض أشعة المريض
@@ -72,8 +72,7 @@ const uploadForm = asyncHandler(async (req, res) => {
 });
 
 // ────────────────────────────────────────────────────────────
-// POST /patients/:patientId/xrays — رفع أشعة جديدة
-// يدعم رفع ملف واحد أو عدة ملفات دفعة واحدة
+// POST /patients/:patientId/xrays — رفع أشعة جديدة (Cloudinary)
 // ────────────────────────────────────────────────────────────
 const upload = asyncHandler(async (req, res) => {
   const patient = await Patient.findById(req.params.patientId);
@@ -83,7 +82,6 @@ const upload = asyncHandler(async (req, res) => {
     return res.redirect('/patients');
   }
 
-  // التحقق من وجود ملفات مرفوعة
   if (!req.files || req.files.length === 0) {
     return res.render('xrays/upload', {
       title:           `رفع أشعة — ${patient.firstName} ${patient.lastName}`,
@@ -93,52 +91,31 @@ const upload = asyncHandler(async (req, res) => {
     });
   }
 
-  const {
-    xrayType,
-    doctorNotes,
-    relatedTeeth,
-  } = req.body;
+  const { xrayType, doctorNotes, relatedTeeth } = req.body;
 
-  // الأسنان المرتبطة بالأشعة
   const teethNumbers = relatedTeeth
     ? String(relatedTeeth).split(',')
         .map((t) => parseInt(t.trim()))
         .filter((n) => !isNaN(n) && n >= 1 && n <= 32)
     : [];
 
-  // بناء سجلات الأشعة من الملفات المرفوعة
-  const newXrayRecords = req.files.map((file) => {
-    const validation = validateUploadedFile(file);
-    if (!validation.valid) return null;
+  // ── بناء سجلات الأشعة من ملفات Cloudinary المرفوعة ────────
+  const newXrayRecords = req.files.map((file) => ({
+    filename:     file.originalname,
+    filepath:     file.path,        // رابط Cloudinary الكامل (secure_url)
+    cloudinaryId: file.filename,     // public_id الذي يُولّده Cloudinary
+    resourceType: file.mimetype === 'application/pdf' ? 'raw' : 'image',
+    xrayType:     xrayType || 'other',
+    relatedTeeth: teethNumbers,
+    doctorNotes:  doctorNotes?.trim() || null,
+    uploadedAt:   new Date(),
+  }));
 
-    // بناء مسار URL للعرض في المتصفح
-    const publicPath = buildPublicPath(file.path);
-
-    return {
-      filename:     file.filename,
-      filepath:     publicPath,
-      xrayType:     xrayType || 'other',
-      relatedTeeth: teethNumbers,
-      doctorNotes:  doctorNotes?.trim() || null,
-      uploadedAt:   new Date(),
-    };
-  }).filter(Boolean);
-
-  if (newXrayRecords.length === 0) {
-    return res.render('xrays/upload', {
-      title:           `رفع أشعة — ${patient.firstName} ${patient.lastName}`,
-      patient,
-      xrayTypesLabels: XRAY_TYPES_LABELS,
-      errors:          ['فشل رفع الملفات، يرجى المحاولة مجدداً'],
-    });
-  }
-
-  // إضافة الأشعة لمصفوفة المريض
   patient.xrays.push(...newXrayRecords);
   await patient.save();
 
   req.session.successMsg =
-    `✅ تم رفع ${newXrayRecords.length} صورة أشعة بنجاح لـ ${patient.firstName} ${patient.lastName}`;
+    `✅ تم رفع ${newXrayRecords.length} صورة أشعة بنجاح إلى السحابة`;
   res.redirect(`/patients/${patient._id}/xrays`);
 });
 
@@ -237,19 +214,15 @@ const destroy = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: 'صورة الأشعة غير موجودة' });
   }
 
-  // حذف الملف من القرص أولاً
-  if (xray.filepath) {
-    await deleteFileFromDisk(xray.filepath);
+  // حذف الملف من Cloudinary أولاً
+  if (xray.cloudinaryId) {
+    await deleteFromCloudinary(xray.cloudinaryId, xray.resourceType || 'image');
   }
 
-  // حذف السجل من قاعدة البيانات
   xray.deleteOne();
   await patient.save();
 
-  res.json({
-    success: true,
-    message: 'تم حذف صورة الأشعة بنجاح',
-  });
+  res.json({ success: true, message: 'تم حذف صورة الأشعة بنجاح' });
 });
 
 // ────────────────────────────────────────────────────────────

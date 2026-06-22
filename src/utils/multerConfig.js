@@ -1,21 +1,11 @@
 // ============================================================
-// src/utils/multerConfig.js — إعداد Multer لرفع الأشعة
+// src/utils/multerConfig.js — رفع الأشعة عبر Cloudinary
 // ============================================================
 'use strict';
 
 const multer = require('multer');
-const path   = require('path');
-const fs     = require('fs');
-
-// ── أنواع الملفات المسموح بها ────────────────────────────────
-const ALLOWED_MIME_TYPES = {
-  'image/jpeg':    '.jpg',
-  'image/jpg':     '.jpg',
-  'image/png':     '.png',
-  'image/webp':    '.webp',
-  'image/tiff':    '.tiff',
-  'application/pdf': '.pdf',
-};
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { cloudinary, deleteFromCloudinary } = require('../config/cloudinary');
 
 const XRAY_TYPES_LABELS = {
   panoramic:  'بانورامية',
@@ -25,84 +15,55 @@ const XRAY_TYPES_LABELS = {
   other:      'أخرى',
 };
 
-// ── إعداد مكان التخزين ───────────────────────────────────────
-const xrayStorage = multer.diskStorage({
+const ALLOWED_MIME_TYPES = {
+  'image/jpeg':      true,
+  'image/jpg':       true,
+  'image/png':       true,
+  'image/webp':      true,
+  'image/tiff':      true,
+  'application/pdf': true,
+};
 
-  destination: (req, file, cb) => {
-    // تنظيم الملفات في مجلدات حسب ID المريض
-    const patientId  = req.params.patientId || req.body.patientId || 'general';
-    const uploadPath = path.join(__dirname, '../../public/uploads/xrays', patientId);
+// ── إعداد التخزين السحابي ─────────────────────────────────────
+const xrayStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    const patientId   = req.params.patientId || 'general';
+    const isPdf        = file.mimetype === 'application/pdf';
 
-    // إنشاء المجلد إن لم يكن موجوداً
-    fs.mkdirSync(uploadPath, { recursive: true });
-    cb(null, uploadPath);
-  },
-
-  filename: (req, file, cb) => {
-    // اسم فريد: timestamp + رقم عشوائي + الامتداد الأصلي
-    const ext      = path.extname(file.originalname).toLowerCase();
-    const safeName = `xray_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`;
-    cb(null, safeName);
+    return {
+      folder:        `dental-clinic/xrays/${patientId}`,
+      resource_type: isPdf ? 'raw' : 'image',
+      public_id:     `xray_${Date.now()}_${Math.round(Math.random() * 1e6)}`,
+      // تحسين الصور تلقائياً (لا يؤثر على PDF)
+      transformation: isPdf ? undefined : [{ quality: 'auto:good' }],
+    };
   },
 });
 
-// ── فلتر نوع الملف ────────────────────────────────────────────
 const xrayFileFilter = (req, file, cb) => {
   if (ALLOWED_MIME_TYPES[file.mimetype]) {
     cb(null, true);
   } else {
-    cb(
-      new Error(
-        `نوع الملف غير مدعوم (${file.mimetype}). ` +
-        'الأنواع المسموح بها: JPG, PNG, WEBP, TIFF, PDF'
-      ),
-      false
-    );
+    cb(new Error(`نوع الملف غير مدعوم: ${file.mimetype}`), false);
   }
 };
 
-// ── إعداد Multer النهائي ─────────────────────────────────────
 const uploadXray = multer({
-  storage:  xrayStorage,
+  storage:    xrayStorage,
   fileFilter: xrayFileFilter,
-  limits: {
-    fileSize:  20 * 1024 * 1024, // 20 ميجابايت كحد أقصى لكل ملف
-    files:     10,               // 10 ملفات كحد أقصى في طلب واحد
-  },
+  limits:     { fileSize: 20 * 1024 * 1024, files: 10 },
 });
 
-// ── دالة مساعدة: حذف ملف من القرص ──────────────────────────
-const deleteFileFromDisk = (filepath) => {
-  return new Promise((resolve) => {
-    const absolutePath = path.join(__dirname, '../../', filepath);
-    fs.unlink(absolutePath, (err) => {
-      if (err && err.code !== 'ENOENT') {
-        console.error('⚠️  فشل حذف الملف:', absolutePath, err.message);
-      }
-      resolve(); // لا نريد إيقاف التطبيق بسبب خطأ في حذف ملف
-    });
-  });
-};
-
-// ── دالة مساعدة: بناء مسار URL عام للعرض ───────────────────
-const buildPublicPath = (absoluteFilepath) => {
-  // تحويل المسار المطلق إلى مسار URL نسبي
-  const uploadsIndex = absoluteFilepath.indexOf('public');
-  if (uploadsIndex === -1) return absoluteFilepath;
-  return absoluteFilepath.substring(uploadsIndex + 'public'.length).replace(/\\/g, '/');
-};
-
-// ── دالة: التحقق من صحة الملف بعد الرفع ─────────────────────
+// ── دالة مساعدة: التحقق من الملف ──────────────────────────────
 const validateUploadedFile = (file) => {
   if (!file) return { valid: false, error: 'لم يتم رفع أي ملف' };
-  if (file.size === 0) return { valid: false, error: 'الملف فارغ' };
   return { valid: true };
 };
 
 module.exports = {
   uploadXray,
-  deleteFileFromDisk,
-  buildPublicPath,
+  deleteFromCloudinary,
   validateUploadedFile,
   ALLOWED_MIME_TYPES,
   XRAY_TYPES_LABELS,
