@@ -52,6 +52,17 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true , limit: '10mb' }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ============================================================
+// معالجة طلب favicon.ico الافتراضي من المتصفحات
+// (يمنع ظهور خطأ 404 في الـ Console واللوجات)
+// ============================================================
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'favicon.svg'), {
+    headers: { 'Content-Type': 'image/svg+xml' },
+  });
+});
+
 // ============================================================
 // 🔐 إعدادات الأمان
 // ============================================================
